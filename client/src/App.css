@@ -1,0 +1,70 @@
+.App {
+  text-align: center;
+}
+
+.App-header {
+  background-color: #282c34;
+  padding: 20px;
+  color: white;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+}
+
+.status-card {
+  background-color: #3a3f47;
+  padding: 20px;
+  border-radius: 10px;
+  margin: 20px 0;
+  max-width: 400px;
+  width: 100%;
+}
+
+.info-section, .next-steps {
+  background-color: #3a3f47;
+  padding: 20px;
+  border-radius: 10px;
+  margin: 10px 0;
+  max-width: 600px;
+  width: 100%;
+  text-align: left;
+}
+
+.info-section h3, .next-steps h3 {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.info-section ul, .next-steps ol {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.info-section li, .next-steps li {
+  margin: 8px 0;
+}
+
+code {
+  background-color: #1e1e1e;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
+
+h1 {
+  margin-bottom: 10px;
+}
+
+h3 {
+  color: #61dafb;
+  font-size: 24px;
+}
+
+p {
+  font-size: 18px;
+  margin: 10px 0;
+}
