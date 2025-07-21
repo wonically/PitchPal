@@ -15,12 +15,19 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [volumeLevel, setVolumeLevel] = useState<number>(0);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyzerRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // Cleanup effect
   useEffect(() => {
@@ -36,8 +43,60 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
         clearInterval((window as any).recordingInterval);
         delete (window as any).recordingInterval;
       }
+      stopVolumeMonitoring();
     };
   }, []);
+
+  const startVolumeMonitoring = (stream: MediaStream) => {
+    try {
+      // Create audio context and analyzer
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyzer = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      
+      analyzer.fftSize = 256;
+      analyzer.smoothingTimeConstant = 0.8;
+      microphone.connect(analyzer);
+      
+      audioContextRef.current = audioContext;
+      analyzerRef.current = analyzer;
+      
+      // Start monitoring volume levels
+      const monitorVolume = () => {
+        if (analyzerRef.current) {
+          const dataArray = new Uint8Array(analyzerRef.current.frequencyBinCount);
+          analyzerRef.current.getByteFrequencyData(dataArray);
+          
+          // Calculate average volume
+          const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+          const normalizedVolume = Math.min(average / 128, 1); // Normalize to 0-1
+          
+          setVolumeLevel(normalizedVolume);
+        }
+        
+        animationFrameRef.current = requestAnimationFrame(monitorVolume);
+      };
+      
+      monitorVolume();
+    } catch (error) {
+      console.error('Error setting up volume monitoring:', error);
+    }
+  };
+
+  const stopVolumeMonitoring = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    
+    analyzerRef.current = null;
+    setVolumeLevel(0);
+  };
 
   const handleModeSwitch = (mode: InputMode) => {
     // Clean up any ongoing recording
@@ -52,6 +111,7 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
       clearInterval((window as any).recordingInterval);
       delete (window as any).recordingInterval;
     }
+    stopVolumeMonitoring();
     
     setInputMode(mode);
     // Reset states when switching modes
@@ -59,6 +119,8 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
     setUploadedFile(null);
     setRecordedAudio(null);
     setRecordingDuration(0);
+    setAnalysisResult(null);
+    setSubmissionError(null);
     
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -78,6 +140,9 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
       
       mediaStreamRef.current = stream;
       audioChunksRef.current = [];
+      
+      // Start volume monitoring
+      startVolumeMonitoring(stream);
       
       // Create MediaRecorder instance
       const mediaRecorder = new MediaRecorder(stream, {
@@ -131,6 +196,9 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
       mediaRecorderRef.current.stop();
     }
     
+    // Stop volume monitoring
+    stopVolumeMonitoring();
+    
     setRecordingState('recorded');
     
     // Clear the timer interval
@@ -168,12 +236,46 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
         type: 'audio/webm;codecs=opus'
       });
       onAudioReady(file, 'record');
+      handleSubmit(file);
     }
   };
 
   const handleFinishUpload = () => {
     if (uploadedFile) {
       onAudioReady(uploadedFile, 'upload');
+      handleSubmit(uploadedFile);
+    }
+  };
+
+  const handleSubmit = async (audioFile: File) => {
+    setIsSubmitting(true);
+    setSubmissionError(null);
+    setAnalysisResult(null);
+
+    try {
+      // Create FormData and append the audio file
+      const formData = new FormData();
+      formData.append('audio', audioFile);
+
+      // Send to /analyze endpoint
+      const response = await fetch('/analyze', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      }
+
+      // Parse JSON response
+      const result = await response.json();
+      setAnalysisResult(result);
+
+    } catch (error) {
+      console.error('Error submitting audio:', error);
+      setSubmissionError(error instanceof Error ? error.message : 'Failed to analyze audio');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -244,6 +346,22 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                   <span className="recording-indicator">🔴</span>
                   {formatDuration(recordingDuration)}
                 </div>
+                <div className="volume-meter">
+                  <div className="volume-label">🔊 Volume:</div>
+                  <div className="volume-bars">
+                    {Array.from({ length: 20 }, (_, i) => (
+                      <div 
+                        key={i}
+                        className={`volume-bar ${i < volumeLevel * 20 ? 'active' : ''}`}
+                        style={{
+                          backgroundColor: i < volumeLevel * 20 
+                            ? (i > 16 ? '#ff4444' : i > 10 ? '#ffaa00' : '#44ff44')
+                            : 'rgba(255, 255, 255, 0.1)'
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
             
@@ -257,6 +375,8 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                       setRecordingState('idle');
                       setRecordedAudio(null);
                       setRecordingDuration(0);
+                      setAnalysisResult(null);
+                      setSubmissionError(null);
                     }}
                     disabled={disabled}
                   >
@@ -265,9 +385,9 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                   <button
                     className="action-button primary"
                     onClick={handleFinishRecording}
-                    disabled={disabled}
+                    disabled={disabled || isSubmitting}
                   >
-                    Use This Recording
+                    {isSubmitting ? '🔄 Analyzing...' : 'Use This Recording'}
                   </button>
                 </div>
               </div>
@@ -316,6 +436,8 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                   className="action-button secondary"
                   onClick={() => {
                     setUploadedFile(null);
+                    setAnalysisResult(null);
+                    setSubmissionError(null);
                     if (fileInputRef.current) {
                       fileInputRef.current.value = '';
                     }
@@ -327,9 +449,9 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                 <button
                   className="action-button primary"
                   onClick={handleFinishUpload}
-                  disabled={disabled}
+                  disabled={disabled || isSubmitting}
                 >
-                  Use This File
+                  {isSubmitting ? '🔄 Analyzing...' : 'Use This File'}
                 </button>
               </div>
             </div>
@@ -349,6 +471,29 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
           >
             Your browser does not support the audio element.
           </audio>
+        </div>
+      )}
+
+      {/* Submission Status */}
+      {isSubmitting && (
+        <div className="submission-status">
+          <p>🔄 Analyzing your pitch...</p>
+        </div>
+      )}
+
+      {submissionError && (
+        <div className="submission-error">
+          <p>❌ Error: {submissionError}</p>
+        </div>
+      )}
+
+      {/* Analysis Results */}
+      {analysisResult && (
+        <div className="analysis-results">
+          <h4>✅ Analysis Complete</h4>
+          <pre className="analysis-json">
+            {JSON.stringify(analysisResult, null, 2)}
+          </pre>
         </div>
       )}
     </div>

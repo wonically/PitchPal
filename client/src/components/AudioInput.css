@@ -307,3 +307,65 @@
     font-size: 20px;
   }
 }
+
+/* Volume Meter */
+.volume-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 15px;
+  padding: 10px;
+  background-color: rgba(97, 218, 251, 0.1);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.volume-label {
+  color: #61dafb;
+  min-width: 70px;
+  font-weight: 500;
+}
+
+.volume-bars {
+  display: flex;
+  align-items: end;
+  gap: 2px;
+  height: 20px;
+  flex: 1;
+}
+
+.volume-bar {
+  width: 4px;
+  height: 100%;
+  border-radius: 2px;
+  transition: background-color 0.1s ease-out;
+}
+
+.volume-bar.active {
+  opacity: 1;
+}
+
+.volume-bar:not(.active) {
+  opacity: 0.3;
+}
+
+@media (max-width: 600px) {
+  .volume-meter {
+    font-size: 12px;
+    gap: 8px;
+    padding: 8px;
+  }
+  
+  .volume-label {
+    min-width: 60px;
+  }
+  
+  .volume-bars {
+    height: 16px;
+    gap: 1px;
+  }
+  
+  .volume-bar {
+    width: 3px;
+  }
+}
