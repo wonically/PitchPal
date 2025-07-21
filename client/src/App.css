@@ -77,10 +77,14 @@
 .error-message {
   background-color: #f44336;
   color: white;
-  padding: 15px;
+  padding: 20px;
   border-radius: 10px;
   margin: 15px 0;
   font-size: 16px;
+  line-height: 1.6;
+  white-space: pre-line; /* Preserves line breaks */
+  text-align: left;
+  border-left: 4px solid #d32f2f;
 }
 
 .analysis-results {

@@ -49,62 +49,68 @@ export const analyzePitch = async (req: Request, res: Response) => {
 
     // Validate OpenAI API key
     if (!validateOpenAIKey()) {
-      console.warn('OpenAI API key not configured, using mock analysis');
+      return res.status(500).json({
+        error: 'Service temporarily unavailable',
+        message: 'AI analysis service is not properly configured. Please contact support.',
+        details: 'OpenAI API key not configured'
+      });
     }
-
-    let analysis;
-    let usingMock = false;
 
     try {
-      // Try OpenAI first
-      analysis = await analyzePitchWithOpenAI(pitchText);
-    } catch (error) {
-      console.warn('OpenAI analysis failed, falling back to mock analysis:', error);
-      analysis = getMockPitchAnalysis(pitchText);
-      usingMock = true;
-    }
-
-    res.json({
-      success: true,
-      data: {
-        id: `analysis_${Date.now()}`,
-        pitchText,
-        analysisType: analysisType || 'general',
-        analysis,
-        usingMock,
-        timestamp: new Date().toISOString()
-      }
-    });
-  } catch (error) {
-    console.error('Error analyzing pitch:', error);
-    
-    // Handle specific OpenAI errors
-    if (error instanceof Error) {
-      if (error.message.includes('API key')) {
-        return res.status(401).json({
-          error: 'Invalid API key',
-          message: 'OpenAI API key is invalid or expired'
-        });
-      }
+      // Try OpenAI analysis
+      const analysis = await analyzePitchWithOpenAI(pitchText);
       
-      if (error.message.includes('quota')) {
+      res.json({
+        success: true,
+        data: {
+          id: `analysis_${Date.now()}`,
+          pitchText,
+          analysisType: analysisType || 'general',
+          analysis,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error: any) {
+      console.error('OpenAI analysis failed:', error);
+      
+      // Handle specific OpenAI errors with appropriate messages
+      if (error.status === 429 || error.message?.includes('quota')) {
         return res.status(429).json({
-          error: 'API quota exceeded',
-          message: 'OpenAI API quota has been exceeded'
+          error: 'Service temporarily unavailable',
+          message: 'We are currently experiencing high demand. Our AI analysis service has reached its usage limit. Please try again later or contact support for assistance.',
+          details: 'OpenAI API quota exceeded'
         });
       }
       
-      if (error.message.includes('parse')) {
+      if (error.status === 401 || error.message?.includes('API key')) {
         return res.status(500).json({
-          error: 'Analysis parsing error',
-          message: 'Failed to parse analysis results. Please try again.'
+          error: 'Service configuration error',
+          message: 'There is an issue with our AI service configuration. Please contact support.',
+          details: 'Invalid or expired OpenAI API key'
         });
       }
+      
+      if (error.status === 404 || error.message?.includes('model')) {
+        return res.status(500).json({
+          error: 'Service temporarily unavailable',
+          message: 'The AI model we use is currently unavailable. Please try again later or contact support.',
+          details: 'OpenAI model not accessible'
+        });
+      }
+      
+      // Generic OpenAI service error
+      return res.status(503).json({
+        error: 'AI service unavailable',
+        message: 'Our AI analysis service is temporarily unavailable. Please try again in a few minutes.',
+        details: 'OpenAI service error'
+      });
     }
-
+  } catch (error) {
+    // Fallback for any unexpected errors
+    console.error('Unexpected error in analyzePitch:', error);
     res.status(500).json({
       error: 'Internal server error',
-      message: 'Failed to analyze pitch'
+      message: 'An unexpected error occurred. Please try again later.'
     });
   }
 };

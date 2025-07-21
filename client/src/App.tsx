@@ -29,7 +29,6 @@ interface AnalysisResponse {
     pitchText: string;
     analysisType: string;
     analysis: PitchAnalysis;
-    usingMock: boolean;
     timestamp: string;
   };
 }
@@ -39,7 +38,6 @@ function App() {
   const [analysis, setAnalysis] = useState<PitchAnalysis | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [usingMock, setUsingMock] = useState<boolean>(false);
 
   const handleSubmit = async () => {
     if (!pitchText.trim()) {
@@ -59,15 +57,29 @@ function App() {
 
       if (response.data.success) {
         setAnalysis(response.data.data.analysis);
-        setUsingMock(response.data.data.usingMock);
       } else {
         setError('Failed to analyze pitch');
       }
     } catch (error: any) {
-      if (error.response?.data?.message) {
-        setError(error.response.data.message);
+      console.error('Analysis error:', error);
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // Handle specific error cases with user-friendly messages
+        if (error.response.status === 429) {
+          setError(`${errorData.message}\n\nWe apologize for the inconvenience. You can try again in a few minutes or contact our support team.`);
+        } else if (error.response.status === 503) {
+          setError(`${errorData.message}\n\nThis is temporary and should be resolved shortly.`);
+        } else if (error.response.status === 500) {
+          setError(`${errorData.message}\n\nIf this problem persists, please contact our support team.`);
+        } else {
+          setError(errorData.message || 'An error occurred while analyzing your pitch');
+        }
+      } else if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
+        setError('Unable to connect to our analysis service. Please check that the backend server is running on port 3001 and try again.');
       } else {
-        setError('Failed to connect to server. Make sure the backend is running on port 3001.');
+        setError('An unexpected error occurred. Please try again later.');
       }
     } finally {
       setLoading(false);
@@ -126,7 +138,7 @@ function App() {
 
         {analysis && (
           <div className="analysis-results">
-            <h3>Analysis Results {usingMock && '(Demo Mode)'}</h3>
+            <h3>Analysis Results</h3>
             
             <div className="score-overview">
               <div className="overall-score">
