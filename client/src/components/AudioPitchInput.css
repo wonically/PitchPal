@@ -1,0 +1,333 @@
+/* Audio Pitch Input Component Styles */
+.audio-pitch-input {
+  background-color: #3a3f47;
+  padding: 30px;
+  border-radius: 15px;
+  margin: 20px 0;
+  max-width: 600px;
+  width: 100%;
+}
+
+.audio-pitch-input h3 {
+  color: #61dafb;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+/* Mode Toggle */
+.mode-toggle {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  background-color: #2d3338;
+  padding: 5px;
+  border-radius: 10px;
+}
+
+.mode-button {
+  flex: 1;
+  padding: 15px 20px;
+  border: none;
+  border-radius: 8px;
+  background-color: transparent;
+  color: #ddd;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mode-button:hover:not(:disabled) {
+  background-color: #61dafb20;
+  color: #61dafb;
+}
+
+.mode-button.active {
+  background-color: #61dafb;
+  color: #282c34;
+  font-weight: bold;
+}
+
+.mode-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Recording Mode */
+.record-mode {
+  text-align: center;
+}
+
+.record-controls {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.record-button {
+  padding: 20px 30px;
+  border: none;
+  border-radius: 50px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 10px;
+}
+
+.record-button.start {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.record-button.start:hover:not(:disabled) {
+  background-color: #45a049;
+  transform: scale(1.05);
+}
+
+.record-button.stop {
+  background-color: #f44336;
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
+.record-button.restart {
+  background-color: #ff9800;
+  color: white;
+}
+
+.record-button.restart:hover:not(:disabled) {
+  background-color: #e68900;
+}
+
+.record-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.recording-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  color: #f44336;
+  font-weight: bold;
+}
+
+.recording-dot {
+  width: 12px;
+  height: 12px;
+  background-color: #f44336;
+  border-radius: 50%;
+  animation: blink 1s infinite;
+}
+
+.recorded-preview {
+  text-align: center;
+}
+
+.audio-info {
+  font-size: 18px;
+  color: #4CAF50;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.audio-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+/* Upload Mode */
+.upload-mode {
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-upload-area {
+  width: 100%;
+  text-align: center;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-upload-label {
+  display: block;
+  padding: 40px 20px;
+  border: 3px dashed #61dafb;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: #2d3338;
+}
+
+.file-upload-label:hover {
+  border-color: #21a1c4;
+  background-color: #61dafb10;
+}
+
+.file-upload-prompt {
+  color: #ddd;
+}
+
+.upload-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 15px;
+}
+
+.file-formats {
+  font-size: 14px;
+  color: #999;
+  margin-top: 10px;
+}
+
+.file-selected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  color: #4CAF50;
+}
+
+.file-icon {
+  font-size: 48px;
+}
+
+.file-details {
+  text-align: left;
+}
+
+.file-name {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  word-break: break-all;
+}
+
+.file-size {
+  font-size: 14px;
+  color: #999;
+}
+
+.remove-file-button {
+  margin-top: 15px;
+  padding: 10px 20px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.remove-file-button:hover:not(:disabled) {
+  background-color: #d32f2f;
+}
+
+.remove-file-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Analyze Section */
+.analyze-section {
+  margin-top: 30px;
+  text-align: center;
+  border-top: 1px solid #555;
+  padding-top: 25px;
+}
+
+.analyze-audio-button {
+  background-color: #61dafb;
+  color: #282c34;
+  border: none;
+  padding: 15px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 15px;
+}
+
+.analyze-audio-button:hover:not(:disabled) {
+  background-color: #21a1c4;
+  transform: translateY(-2px);
+}
+
+.analyze-audio-button:disabled {
+  background-color: #666;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.audio-note {
+  font-size: 14px;
+  color: #999;
+  font-style: italic;
+}
+
+/* Animations */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .audio-pitch-input {
+    padding: 20px;
+    margin: 15px;
+  }
+  
+  .mode-toggle {
+    flex-direction: column;
+  }
+  
+  .file-selected {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .file-details {
+    text-align: center;
+  }
+  
+  .record-button {
+    padding: 15px 25px;
+    font-size: 16px;
+  }
+}
