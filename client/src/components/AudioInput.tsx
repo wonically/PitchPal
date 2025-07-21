@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './AudioInput.css';
 
 interface AudioInputProps {
@@ -18,8 +18,41 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      // Clean up on component unmount
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if ((window as any).recordingInterval) {
+        clearInterval((window as any).recordingInterval);
+        delete (window as any).recordingInterval;
+      }
+    };
+  }, []);
 
   const handleModeSwitch = (mode: InputMode) => {
+    // Clean up any ongoing recording
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    if ((window as any).recordingInterval) {
+      clearInterval((window as any).recordingInterval);
+      delete (window as any).recordingInterval;
+    }
+    
     setInputMode(mode);
     // Reset states when switching modes
     setRecordingState('idle');
@@ -33,32 +66,78 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
   };
 
   const handleStartRecording = async () => {
-    // TODO: Implement actual recording logic
-    setRecordingState('recording');
-    setRecordingDuration(0);
-    
-    // Simulate recording duration counter (remove when implementing real recording)
-    const interval = setInterval(() => {
-      setRecordingDuration(prev => prev + 1);
-    }, 1000);
-    
-    // Store interval reference for cleanup (in real implementation)
-    (window as any).recordingInterval = interval;
+    try {
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        } 
+      });
+      
+      mediaStreamRef.current = stream;
+      audioChunksRef.current = [];
+      
+      // Create MediaRecorder instance
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
+      mediaRecorderRef.current = mediaRecorder;
+      
+      // Handle data availability
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      // Handle recording stop
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { 
+          type: 'audio/webm;codecs=opus' 
+        });
+        setRecordedAudio(audioBlob);
+        
+        // Clean up stream
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(track => track.stop());
+          mediaStreamRef.current = null;
+        }
+      };
+      
+      // Start recording
+      mediaRecorder.start(100); // Collect data every 100ms
+      setRecordingState('recording');
+      setRecordingDuration(0);
+      
+      // Start timer
+      const interval = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+      
+      (window as any).recordingInterval = interval;
+      
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      alert('Could not access microphone. Please check your permissions.');
+    }
   };
 
   const handleStopRecording = async () => {
-    // TODO: Implement actual recording stop logic
+    // Stop the MediaRecorder
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    
     setRecordingState('recorded');
     
-    // Clear the simulation interval
+    // Clear the timer interval
     if ((window as any).recordingInterval) {
       clearInterval((window as any).recordingInterval);
       delete (window as any).recordingInterval;
     }
-    
-    // Simulate recorded audio blob (remove when implementing real recording)
-    const simulatedBlob = new Blob(['fake audio data'], { type: 'audio/wav' });
-    setRecordedAudio(simulatedBlob);
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,9 +163,9 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
 
   const handleFinishRecording = () => {
     if (recordedAudio) {
-      // Convert blob to file
-      const file = new File([recordedAudio], `recording_${Date.now()}.wav`, {
-        type: 'audio/wav'
+      // Convert blob to file - use webm format since that's what MediaRecorder produces
+      const file = new File([recordedAudio], `recording_${Date.now()}.webm`, {
+        type: 'audio/webm;codecs=opus'
       });
       onAudioReady(file, 'record');
     }
@@ -174,7 +253,11 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                 <div className="recording-actions">
                   <button
                     className="action-button secondary"
-                    onClick={() => setRecordingState('idle')}
+                    onClick={() => {
+                      setRecordingState('idle');
+                      setRecordedAudio(null);
+                      setRecordingDuration(0);
+                    }}
                     disabled={disabled}
                   >
                     Record Again
