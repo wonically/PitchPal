@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import AudioPitchInput from './components/AudioPitchInput';
 import './App.css';
-import './components/AudioPitchInput.css';
+import AudioInput from './components/AudioInput';
 
 interface PitchAnalysis {
   tone: {
@@ -35,16 +34,14 @@ interface AnalysisResponse {
   };
 }
 
-type PitchInputMode = 'text' | 'audio';
-
 function App() {
-  const [inputMode, setInputMode] = useState<PitchInputMode>('text');
   const [pitchText, setPitchText] = useState<string>('');
   const [analysis, setAnalysis] = useState<PitchAnalysis | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [inputType, setInputType] = useState<'text' | 'audio'>('text');
 
-  const handleTextSubmit = async () => {
+  const handleSubmit = async () => {
     if (!pitchText.trim()) {
       setError('Please enter a pitch to analyze');
       return;
@@ -91,32 +88,38 @@ function App() {
     }
   };
 
-  const handleAudioSubmit = async (audioData: File | Blob, mode: 'record' | 'upload') => {
+  const handleAudioReady = async (audioFile: File, mode: 'record' | 'upload') => {
+    console.log('Audio ready for analysis:', { filename: audioFile.name, size: audioFile.size, mode });
+    
     setLoading(true);
     setError('');
     setAnalysis(null);
 
     try {
-      // TODO: Implement audio analysis
-      // For now, just show a placeholder message
-      console.log('Audio analysis requested:', { audioData, mode });
+      // TODO: Implement audio analysis API call
+      // const formData = new FormData();
+      // formData.append('audio', audioFile);
+      // formData.append('analysisType', 'general');
       
-      // Simulate processing
+      // const response = await axios.post<AnalysisResponse>('http://localhost:3001/api/analyze', 
+      //   formData, 
+      //   {
+      //     headers: {
+      //       'Content-Type': 'multipart/form-data'
+      //     }
+      //   }
+      // );
+      
+      // For now, simulate the process
       await new Promise(resolve => setTimeout(resolve, 2000));
+      setError('Audio analysis is not yet implemented. Please use text input for now.');
       
-      setError('Audio analysis feature is coming soon! This will analyze your vocal delivery, tone, pace, and confidence directly from the audio. Please use text input for now.');
     } catch (error: any) {
       console.error('Audio analysis error:', error);
       setError('Failed to analyze audio. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleModeSwitch = (mode: PitchInputMode) => {
-    setInputMode(mode);
-    setError('');
-    setAnalysis(null);
   };
 
   const getScoreColor = (score: number): string => {
@@ -140,58 +143,62 @@ function App() {
         <h1>🎯 PitchPal</h1>
         <p>AI-Powered Pitch Analysis</p>
         
-        {/* Input Mode Toggle */}
-        <div className="input-mode-toggle">
-          <button
-            className={`mode-toggle-button ${inputMode === 'text' ? 'active' : ''}`}
-            onClick={() => handleModeSwitch('text')}
-            disabled={loading}
-          >
-            ✏️ Text Input
-          </button>
-          <button
-            className={`mode-toggle-button ${inputMode === 'audio' ? 'active' : ''}`}
-            onClick={() => handleModeSwitch('audio')}
-            disabled={loading}
-          >
-            🎤 Audio Input
-          </button>
-        </div>
-
-        {/* Text Input Mode */}
-        {inputMode === 'text' && (
-          <div className="pitch-input-section">
-            <h3>Enter Your Pitch</h3>
-            <textarea
-              className="pitch-textarea"
-              placeholder="Enter your business pitch here... (minimum 10 characters)"
-              value={pitchText}
-              onChange={(e) => setPitchText(e.target.value)}
-              rows={6}
-              maxLength={2000}
-            />
-            <div className="input-info">
-              <span>{pitchText.length}/2000 characters</span>
-            </div>
-            
-            <button 
-              className="analyze-button"
-              onClick={handleTextSubmit}
-              disabled={loading || pitchText.trim().length < 10}
+        <div className="pitch-input-section">
+          {/* Input Type Toggle inside the pitch box */}
+          <div className="input-type-toggle">
+            <button
+              className={`input-type-button ${inputType === 'text' ? 'active' : ''}`}
+              onClick={() => setInputType('text')}
+              disabled={loading}
             >
-              {loading ? 'Analyzing...' : 'Analyze Pitch'}
+              📝 Text Input
+            </button>
+            <button
+              className={`input-type-button ${inputType === 'audio' ? 'active' : ''}`}
+              onClick={() => setInputType('audio')}
+              disabled={loading}
+            >
+              🎤 Audio Input
             </button>
           </div>
-        )}
 
-        {/* Audio Input Mode */}
-        {inputMode === 'audio' && (
-          <AudioPitchInput
-            onAnalyze={handleAudioSubmit}
-            loading={loading}
-          />
-        )}
+          {/* Text Input Section */}
+          {inputType === 'text' && (
+            <div className="text-input-content">
+              <h3>Enter Your Pitch</h3>
+              <textarea
+                className="pitch-textarea"
+                placeholder="Enter your business pitch here... (minimum 10 characters)"
+                value={pitchText}
+                onChange={(e) => setPitchText(e.target.value)}
+                rows={6}
+                maxLength={2000}
+              />
+              <div className="input-info">
+                <span>{pitchText.length}/2000 characters</span>
+              </div>
+              
+              <button 
+                className="analyze-button"
+                onClick={handleSubmit}
+                disabled={loading || pitchText.trim().length < 10}
+              >
+                {loading ? 'Analyzing...' : 'Analyze Pitch'}
+              </button>
+            </div>
+          )}
 
+          {/* Audio Input Section */}
+          {inputType === 'audio' && (
+            <div className="audio-input-content">
+              <AudioInput
+                onAudioReady={handleAudioReady}
+                disabled={loading}
+              />
+            </div>
+          )}
+        </div>
+        
         {/* Error Display */}
         {error && (
           <div className="error-message">

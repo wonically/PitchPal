@@ -13,6 +13,48 @@
   font-size: calc(10px + 2vmin);
 }
 
+/* Input Type Toggle */
+.input-type-toggle {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+/* When input toggle is inside pitch box, reduce top margin */
+.pitch-input-section .input-type-toggle {
+  margin-top: 0;
+  margin-bottom: 25px;
+}
+
+.input-type-button {
+  padding: 12px 24px;
+  border: 2px solid #61dafb;
+  border-radius: 8px;
+  background-color: transparent;
+  color: #61dafb;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+  max-width: 180px;
+}
+
+.input-type-button:hover:not(:disabled) {
+  background-color: rgba(97, 218, 251, 0.1);
+}
+
+.input-type-button.active {
+  background-color: #61dafb;
+  color: #282c34;
+}
+
+.input-type-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .pitch-input-section {
   background-color: #3a3f47;
   padding: 30px;
@@ -20,47 +62,6 @@
   margin: 20px 0;
   max-width: 600px;
   width: 100%;
-}
-
-/* Input Mode Toggle */
-.input-mode-toggle {
-  display: flex;
-  gap: 10px;
-  margin: 20px 0;
-  background-color: #3a3f47;
-  padding: 5px;
-  border-radius: 12px;
-  max-width: 400px;
-  width: 100%;
-}
-
-.mode-toggle-button {
-  flex: 1;
-  padding: 15px 25px;
-  border: none;
-  border-radius: 8px;
-  background-color: transparent;
-  color: #ddd;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.mode-toggle-button:hover:not(:disabled) {
-  background-color: #61dafb20;
-  color: #61dafb;
-}
-
-.mode-toggle-button.active {
-  background-color: #61dafb;
-  color: #282c34;
-  font-weight: bold;
-}
-
-.mode-toggle-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .pitch-textarea {
@@ -262,7 +263,28 @@ h1 {
 
 h3 {
   color: #61dafb;
-  font-size: 24px;
+  margin-bottom: 15px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .input-type-toggle {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .input-type-button {
+    max-width: none;
+  }
+  
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pitch-input-section {
+    padding: 20px;
+    margin: 15px 0;
+  }
 }
 
 h4 {
@@ -285,16 +307,6 @@ p {
   .analysis-results {
     padding: 20px;
     margin: 15px;
-  }
-  
-  .input-mode-toggle {
-    flex-direction: column;
-    margin: 15px;
-    max-width: none;
-  }
-  
-  .mode-toggle-button {
-    padding: 12px 20px;
   }
   
   .analysis-grid {
