@@ -7,14 +7,27 @@ interface PitchAnalysis {
   tone: {
     score: number;
     description: string;
-    suggestions: string[];
+    suggestions?: string[];
   };
   clarity: {
     score: number;
     description: string;
-    suggestions: string[];
+    suggestions?: string[];
+    issues?: string[];
   };
-  jargonCount: {
+  confidence?: {
+    level: string;
+    evidence: string[];
+  };
+  fillerWords?: {
+    count: number;
+    examples: string[];
+  };
+  jargon?: {
+    count: number;
+    examples: string[];
+  };
+  jargonCount?: {
     count: number;
     examples: string[];
     severity: 'low' | 'medium' | 'high';
@@ -96,27 +109,63 @@ function App() {
     setAnalysis(null);
 
     try {
-      // TODO: Implement audio analysis API call
-      // const formData = new FormData();
-      // formData.append('audio', audioFile);
-      // formData.append('analysisType', 'general');
+      const formData = new FormData();
+      formData.append('audio', audioFile);
       
-      // const response = await axios.post<AnalysisResponse>('http://localhost:3001/api/analyze', 
-      //   formData, 
-      //   {
-      //     headers: {
-      //       'Content-Type': 'multipart/form-data'
-      //     }
-      //   }
-      // );
-      
-      // For now, simulate the process
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setError('Audio analysis is not yet implemented. Please use text input for now.');
+      const response = await axios.post('/analyze', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (response.data.success) {
+        // Transform the backend response to match our frontend interface
+        const gptAnalysis = response.data.gptAnalysis;
+        const audioAnalysis = response.data.audioAnalysis;
+        
+        const transformedAnalysis: PitchAnalysis = {
+          tone: {
+            score: gptAnalysis.tone.score,
+            description: gptAnalysis.tone.description,
+            suggestions: [`Based on audio analysis: ${audioAnalysis.analysis?.recommendations?.join(', ') || 'Good delivery'}`]
+          },
+          clarity: {
+            score: gptAnalysis.clarity.score,
+            description: `Speech clarity analysis complete.`,
+            suggestions: gptAnalysis.clarity.issues?.map((issue: string) => `Improve: ${issue}`) || ['Clear speech detected'],
+            issues: gptAnalysis.clarity.issues
+          },
+          confidence: {
+            level: gptAnalysis.confidence.level,
+            evidence: gptAnalysis.confidence.evidence
+          },
+          fillerWords: gptAnalysis.fillerWords,
+          jargon: gptAnalysis.jargon,
+          jargonCount: {
+            count: gptAnalysis.jargon?.count || 0,
+            examples: gptAnalysis.jargon?.examples || [],
+            severity: gptAnalysis.jargon?.count > 5 ? 'high' : gptAnalysis.jargon?.count > 2 ? 'medium' : 'low'
+          },
+          improvedVersion: gptAnalysis.improvedVersion,
+          overallScore: response.data.overallResults?.combinedScore || gptAnalysis.overallScore
+        };
+        
+        setAnalysis(transformedAnalysis);
+      } else {
+        setError('Failed to analyze audio');
+      }
       
     } catch (error: any) {
       console.error('Audio analysis error:', error);
-      setError('Failed to analyze audio. Please try again.');
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        setError(errorData.message || 'Failed to analyze audio');
+      } else if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
+        setError('Unable to connect to our analysis service. Please check that the backend server is running and try again.');
+      } else {
+        setError('Failed to analyze audio. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -235,7 +284,7 @@ function App() {
                 <div className="suggestions">
                   <strong>Suggestions:</strong>
                   <ul>
-                    {analysis.tone.suggestions.map((suggestion, index) => (
+                    {(analysis.tone.suggestions || []).map((suggestion, index) => (
                       <li key={index}>{suggestion}</li>
                     ))}
                   </ul>
@@ -254,7 +303,7 @@ function App() {
                 <div className="suggestions">
                   <strong>Suggestions:</strong>
                   <ul>
-                    {analysis.clarity.suggestions.map((suggestion, index) => (
+                    {(analysis.clarity.suggestions || []).map((suggestion, index) => (
                       <li key={index}>{suggestion}</li>
                     ))}
                   </ul>
@@ -264,25 +313,84 @@ function App() {
               <div className="analysis-card">
                 <h4>Jargon Analysis</h4>
                 <div className="jargon-info">
-                  <span>Count: {analysis.jargonCount.count}</span>
+                  <span>Count: {analysis.jargonCount?.count || 0}</span>
                   <span 
                     className="severity-badge"
-                    style={{ backgroundColor: getSeverityColor(analysis.jargonCount.severity) }}
+                    style={{ backgroundColor: getSeverityColor(analysis.jargonCount?.severity || 'low') }}
                   >
-                    {analysis.jargonCount.severity.toUpperCase()}
+                    {(analysis.jargonCount?.severity || 'low').toUpperCase()}
                   </span>
                 </div>
-                {analysis.jargonCount.examples.length > 0 && (
+                {(analysis.jargonCount?.examples?.length || 0) > 0 && (
                   <div className="jargon-examples">
                     <strong>Examples:</strong>
                     <div className="jargon-tags">
-                      {analysis.jargonCount.examples.map((term, index) => (
+                      {(analysis.jargonCount?.examples || []).map((term, index) => (
                         <span key={index} className="jargon-tag">{term}</span>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
+
+              {/* Confidence Analysis - New */}
+              {analysis.confidence && (
+                <div className="analysis-card">
+                  <h4>Confidence Analysis</h4>
+                  <div className="confidence-level">
+                    <span>Level: </span>
+                    <span 
+                      className={`confidence-badge ${analysis.confidence.level.toLowerCase()}`}
+                      style={{ 
+                        backgroundColor: analysis.confidence.level === 'High' ? '#4CAF50' : 
+                                       analysis.confidence.level === 'Medium' ? '#FF9800' : '#F44336' 
+                      }}
+                    >
+                      {analysis.confidence.level}
+                    </span>
+                  </div>
+                  {analysis.confidence.evidence && analysis.confidence.evidence.length > 0 && (
+                    <div className="evidence">
+                      <strong>Evidence:</strong>
+                      <ul>
+                        {analysis.confidence.evidence.map((evidence, index) => (
+                          <li key={index}>{evidence}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Filler Words Analysis - New */}
+              {analysis.fillerWords && (
+                <div className="analysis-card">
+                  <h4>Filler Words</h4>
+                  <div className="filler-count">
+                    <span>Count: {analysis.fillerWords.count}</span>
+                    <span 
+                      className="filler-badge"
+                      style={{ 
+                        backgroundColor: analysis.fillerWords.count > 10 ? '#F44336' : 
+                                       analysis.fillerWords.count > 5 ? '#FF9800' : '#4CAF50' 
+                      }}
+                    >
+                      {analysis.fillerWords.count > 10 ? 'HIGH' : 
+                       analysis.fillerWords.count > 5 ? 'MEDIUM' : 'LOW'}
+                    </span>
+                  </div>
+                  {analysis.fillerWords.examples && analysis.fillerWords.examples.length > 0 && (
+                    <div className="filler-examples">
+                      <strong>Examples:</strong>
+                      <div className="filler-tags">
+                        {analysis.fillerWords.examples.map((filler, index) => (
+                          <span key={index} className="filler-tag">{filler}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="analysis-card improved-version">
                 <h4>Improved Version</h4>

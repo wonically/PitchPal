@@ -123,7 +123,7 @@ Respond only with valid JSON:
       messages: [
         {
           role: "system",
-          content: "You are an expert speech coach and communication analyst. Provide detailed, actionable feedback in the exact JSON format requested. Be thorough but concise in your analysis."
+          content: "You are an expert speech coach and communication analyst. Provide detailed, actionable feedback in the exact JSON format requested. Be thorough but concise in your analysis. Always respond with valid JSON only."
         },
         {
           role: "user",
@@ -131,8 +131,7 @@ Respond only with valid JSON:
         }
       ],
       temperature: 0.3, // Lower temperature for more consistent analysis
-      max_tokens: 2000,
-      response_format: { type: "json_object" }
+      max_tokens: 2000
     });
 
     const responseContent = completion.choices[0]?.message?.content;
@@ -141,8 +140,15 @@ Respond only with valid JSON:
       throw new Error('No response received from GPT-4');
     }
 
+    // Extract JSON from the response (in case GPT returns extra text)
+    let jsonString = responseContent;
+    const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonString = jsonMatch[0];
+    }
+
     // Parse the JSON response
-    const analysis: GPTAnalysisResult = JSON.parse(responseContent);
+    const analysis: GPTAnalysisResult = JSON.parse(jsonString);
 
     // Validate required fields and provide defaults if missing
     const validatedAnalysis: GPTAnalysisResult = {

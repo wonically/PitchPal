@@ -9,8 +9,13 @@ import json
 import os
 import tempfile
 import subprocess
+import warnings
 from pathlib import Path
 from typing import Dict, Any, List, Optional
+
+# Suppress warnings to keep stdout clean for JSON output
+warnings.filterwarnings("ignore")
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TensorFlow warnings
 
 # Import required libraries
 try:
@@ -27,16 +32,73 @@ except ImportError as e:
     }))
     sys.exit(1)
 
+def convert_webm_to_wav(input_path: str) -> str:
+    """
+    Convert WebM file to WAV using subprocess and FFmpeg if available,
+    or try to load directly with librosa
+    """
+    import tempfile
+    
+    # Try to convert using FFmpeg first
+    try:
+        # Create temporary WAV file
+        temp_wav = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
+        temp_wav.close()
+        
+        # Try FFmpeg conversion
+        result = subprocess.run([
+            'ffmpeg', '-i', input_path, '-acodec', 'pcm_s16le', 
+            '-ar', '16000', '-ac', '1', '-y', temp_wav.name
+        ], capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            return temp_wav.name
+        else:
+            os.unlink(temp_wav.name)
+            raise Exception(f"FFmpeg conversion failed: {result.stderr}")
+            
+    except Exception as e:
+        # Fallback: try to load with librosa and save as WAV
+        try:
+            y, sr = librosa.load(input_path, sr=16000)
+            temp_wav = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
+            temp_wav.close()
+            sf.write(temp_wav.name, y, sr)
+            return temp_wav.name
+        except Exception as fallback_error:
+            raise Exception(f"Both FFmpeg and librosa conversion failed: {str(e)}, {str(fallback_error)}")
+
 def transcribe_audio_with_whisper(file_path: str) -> Dict[str, Any]:
     """
     Transcribe audio using OpenAI Whisper
     """
+    converted_file = None
     try:
-        # Load Whisper model (base model for balance of speed and accuracy)
-        model = whisper.load_model("base")
+        # Convert WebM to WAV if needed
+        if file_path.lower().endswith('.webm'):
+            try:
+                converted_file = convert_webm_to_wav(file_path)
+                file_to_process = converted_file
+            except Exception as convert_error:
+                # Try to process the original file directly
+                file_to_process = file_path
+                print(f"Warning: WebM conversion failed, trying direct processing: {convert_error}", file=sys.stderr)
+        else:
+            file_to_process = file_path
         
-        # Transcribe the audio
-        result = model.transcribe(file_path, verbose=False)
+        # Load Whisper model (base model for balance of speed and accuracy)
+        # Suppress all Whisper output by redirecting both stdout and stderr
+        import contextlib
+        import io
+        
+        # Capture both stdout and stderr to suppress all Whisper output
+        stdout_f = io.StringIO()
+        stderr_f = io.StringIO()
+        with contextlib.redirect_stdout(stdout_f), contextlib.redirect_stderr(stderr_f):
+            model = whisper.load_model("base")
+            
+            # Transcribe the audio with all output suppressed
+            result = model.transcribe(file_to_process, verbose=False)
         
         # Calculate speaking rate
         duration = result.get("duration", 0)
@@ -75,59 +137,86 @@ def transcribe_audio_with_whisper(file_path: str) -> Dict[str, Any]:
             "confidence": None,
             "error": f"Whisper transcription failed: {str(e)}"
         }
+    finally:
+        # Clean up converted file if it was created
+        if converted_file and os.path.exists(converted_file):
+            try:
+                os.unlink(converted_file)
+            except:
+                pass
 
 def extract_prosodic_features_with_opensmile(file_path: str) -> Dict[str, Any]:
     """
     Extract prosodic features using pyOpenSMILE
     """
+    converted_file = None
     try:
-        # Initialize openSMILE with ComParE feature set
-        smile = opensmile.Smile(
-            feature_set=opensmile.FeatureSet.ComParE_2016,
-            feature_level=opensmile.FeatureLevel.Functionals,
-        )
+        # Convert WebM to WAV if needed for OpenSMILE
+        if file_path.lower().endswith('.webm'):
+            try:
+                converted_file = convert_webm_to_wav(file_path)
+                file_to_process = converted_file
+            except Exception as convert_error:
+                # Try to process the original file directly
+                file_to_process = file_path
+                print(f"Warning: WebM conversion failed for OpenSMILE, trying direct processing: {convert_error}", file=sys.stderr)
+        else:
+            file_to_process = file_path
         
-        # Extract features
-        features = smile.process_file(file_path)
+        # Initialize openSMILE with ComParE feature set (suppress output)
+        import contextlib
+        import io
+        
+        f = io.StringIO()
+        with contextlib.redirect_stderr(f):
+            smile = opensmile.Smile(
+                feature_set=opensmile.FeatureSet.ComParE_2016,
+                feature_level=opensmile.FeatureLevel.Functionals,
+            )
+            
+            # Extract features
+            features = smile.process_file(file_to_process)
         
         # Convert to dict for easier handling
         feature_dict = features.to_dict('records')[0] if not features.empty else {}
         
-        # Extract key prosodic features
+        # Extract key prosodic features (using correct ComParE_2016 feature names)
         prosodic_features = {
             # Pitch features
-            "pitch_mean": feature_dict.get("F0semitoneFrom27.5Hz_sma3nz_amean", 0),
-            "pitch_std": feature_dict.get("F0semitoneFrom27.5Hz_sma3nz_stddevNorm", 0),
-            "pitch_range": feature_dict.get("F0semitoneFrom27.5Hz_sma3nz_range", 0),
+            "pitch_mean": feature_dict.get("F0final_sma_amean", 0),
+            "pitch_std": feature_dict.get("F0final_sma_stddev", 0),
+            "pitch_range": feature_dict.get("F0final_sma_range", 0),
             
             # Jitter (pitch stability)
-            "jitter_local": feature_dict.get("jitterLocal_sma3nz_amean", 0),
-            "jitter_ddp": feature_dict.get("jitterDDP_sma3nz_amean", 0),
+            "jitter_local": feature_dict.get("jitterLocal_sma_amean", 0),
+            "jitter_ddp": feature_dict.get("jitterDDP_sma_amean", 0),
             
-            # Loudness features
-            "loudness_mean": feature_dict.get("loudness_sma3_amean", 0),
-            "loudness_std": feature_dict.get("loudness_sma3_stddevNorm", 0),
-            "loudness_range": feature_dict.get("loudness_sma3_range", 0),
+            # Loudness features (using RMS energy as proxy since ComParE doesn't have direct loudness)
+            "loudness_mean": feature_dict.get("pcm_RMSenergy_sma_amean", 0),
+            "loudness_std": feature_dict.get("pcm_RMSenergy_sma_stddev", 0),
+            "loudness_range": feature_dict.get("pcm_RMSenergy_sma_range", 0),
             
             # Shimmer (amplitude stability)
-            "shimmer_local": feature_dict.get("shimmerLocaldB_sma3nz_amean", 0),
+            "shimmer_local": feature_dict.get("shimmerLocal_sma_amean", 0),
             
             # Voice quality
-            "hnr_mean": feature_dict.get("HNRdBACF_sma3nz_amean", 0),  # Harmonics-to-Noise Ratio
-            "spectral_centroid": feature_dict.get("spectralCentroid_sma3_amean", 0),
+            "hnr_mean": feature_dict.get("logHNR_sma_amean", 0),  # Harmonics-to-Noise Ratio
+            "spectral_centroid": feature_dict.get("pcm_fftMag_spectralCentroid_sma_amean", 0),
             
             # Temporal features
             "voiced_segments_count": feature_dict.get("voicedSegmentsPerSec", 0),
             
             # Energy features
             "energy_mean": feature_dict.get("pcm_RMSenergy_sma_amean", 0),
-            "energy_std": feature_dict.get("pcm_RMSenergy_sma_stddevNorm", 0),
+            "energy_std": feature_dict.get("pcm_RMSenergy_sma_stddev", 0),
         }
         
         # Calculate derived metrics
         prosodic_features["pitch_variability"] = prosodic_features["pitch_std"] / max(prosodic_features["pitch_mean"], 1)
         prosodic_features["loudness_variability"] = prosodic_features["loudness_std"] / max(abs(prosodic_features["loudness_mean"]), 1)
-        prosodic_features["voice_quality_score"] = max(0, min(100, (prosodic_features["hnr_mean"] + 10) * 5))  # Normalize HNR to 0-100
+        # Adjust voice quality score calculation - HNR typically ranges from -20 to +20 dB
+        # Map -20 to 0 and +20 to 100, with 0 dB being 50
+        prosodic_features["voice_quality_score"] = max(0, min(100, (prosodic_features["hnr_mean"] + 20) * 2.5))
         
         return {
             **prosodic_features,
@@ -137,7 +226,9 @@ def extract_prosodic_features_with_opensmile(file_path: str) -> Dict[str, Any]:
     except Exception as e:
         # Fallback to basic librosa analysis if openSMILE fails
         try:
-            y, sr = librosa.load(file_path, sr=None)
+            # Use converted file if available, otherwise original
+            fallback_file = converted_file if converted_file else file_path
+            y, sr = librosa.load(fallback_file, sr=None)
             duration = librosa.get_duration(y=y, sr=sr)
             
             # Basic pitch extraction
@@ -192,6 +283,13 @@ def extract_prosodic_features_with_opensmile(file_path: str) -> Dict[str, Any]:
                 "extraction_success": False,
                 "error": f"Both OpenSMILE and librosa failed: {str(e)}, {str(fallback_error)}"
             }
+    finally:
+        # Clean up converted file if it was created
+        if converted_file and os.path.exists(converted_file):
+            try:
+                os.unlink(converted_file)
+            except:
+                pass
 
 def calculate_speech_rate_from_transcript(transcript_data: Dict[str, Any]) -> float:
     """
@@ -390,9 +488,6 @@ def main():
             }
         }))
         sys.exit(1)
-
-if __name__ == "__main__":
-    main()
 
 if __name__ == "__main__":
     main()

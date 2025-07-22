@@ -15,9 +15,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
-  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [volumeLevel, setVolumeLevel] = useState<number>(0);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -119,8 +116,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
     setUploadedFile(null);
     setRecordedAudio(null);
     setRecordingDuration(0);
-    setAnalysisResult(null);
-    setSubmissionError(null);
     
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -236,47 +231,20 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
         type: 'audio/webm;codecs=opus'
       });
       onAudioReady(file, 'record');
-      handleSubmit(file);
     }
   };
 
   const handleFinishUpload = () => {
     if (uploadedFile) {
       onAudioReady(uploadedFile, 'upload');
-      handleSubmit(uploadedFile);
     }
   };
 
-  const handleSubmit = async (audioFile: File) => {
-    setIsSubmitting(true);
-    setSubmissionError(null);
-    setAnalysisResult(null);
-
-    try {
-      // Create FormData and append the audio file
-      const formData = new FormData();
-      formData.append('audio', audioFile);
-
-      // Send to /analyze endpoint
-      const response = await fetch('/analyze', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status} ${response.statusText}`);
-      }
-
-      // Parse JSON response
-      const result = await response.json();
-      setAnalysisResult(result);
-
-    } catch (error) {
-      console.error('Error submitting audio:', error);
-      setSubmissionError(error instanceof Error ? error.message : 'Failed to analyze audio');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const resetRecording = () => {
+    setRecordingState('idle');
+    setRecordedAudio(null);
+    setRecordingDuration(0);
+    audioChunksRef.current = [];
   };
 
   const formatDuration = (seconds: number): string => {
@@ -375,8 +343,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                       setRecordingState('idle');
                       setRecordedAudio(null);
                       setRecordingDuration(0);
-                      setAnalysisResult(null);
-                      setSubmissionError(null);
                     }}
                     disabled={disabled}
                   >
@@ -385,9 +351,9 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                   <button
                     className="action-button primary"
                     onClick={handleFinishRecording}
-                    disabled={disabled || isSubmitting}
+                    disabled={disabled}
                   >
-                    {isSubmitting ? '🔄 Analyzing...' : 'Use This Recording'}
+                    Use This Recording
                   </button>
                 </div>
               </div>
@@ -436,8 +402,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                   className="action-button secondary"
                   onClick={() => {
                     setUploadedFile(null);
-                    setAnalysisResult(null);
-                    setSubmissionError(null);
                     if (fileInputRef.current) {
                       fileInputRef.current.value = '';
                     }
@@ -449,9 +413,9 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                 <button
                   className="action-button primary"
                   onClick={handleFinishUpload}
-                  disabled={disabled || isSubmitting}
+                  disabled={disabled}
                 >
-                  {isSubmitting ? '🔄 Analyzing...' : 'Use This File'}
+                  Use This File
                 </button>
               </div>
             </div>
@@ -471,29 +435,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
           >
             Your browser does not support the audio element.
           </audio>
-        </div>
-      )}
-
-      {/* Submission Status */}
-      {isSubmitting && (
-        <div className="submission-status">
-          <p>🔄 Analyzing your pitch...</p>
-        </div>
-      )}
-
-      {submissionError && (
-        <div className="submission-error">
-          <p>❌ Error: {submissionError}</p>
-        </div>
-      )}
-
-      {/* Analysis Results */}
-      {analysisResult && (
-        <div className="analysis-results">
-          <h4>✅ Analysis Complete</h4>
-          <pre className="analysis-json">
-            {JSON.stringify(analysisResult, null, 2)}
-          </pre>
         </div>
       )}
     </div>
