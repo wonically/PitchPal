@@ -55,7 +55,7 @@ export async function analyzePitchWithTextBasedAnalysis(pitchText: string): Prom
     const openai = getOpenAIClient();
 
     const prompt = `
-You are an expert pitch analyst. Analyze the following pitch and respond in **valid JSON** only. Be strict and thorough.
+You are a harsh expert pitch analyst. Analyze the following pitch and respond in **valid JSON** only. Be strict and thorough.
 
 Pitch:
 "${pitchText}"

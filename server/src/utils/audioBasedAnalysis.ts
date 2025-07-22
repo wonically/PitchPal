@@ -81,7 +81,7 @@ export async function analyzeWithAudioBasedAnalysis(
     // Get OpenAI client (lazy initialization)
     const client = getOpenAIClient();
     
-    const prompt = `You are a speech and communication coach. Analyze this transcript and audio data to give structured feedback. Be strict and thorough.
+    const prompt = `You are a harsh speech and communication coach. Analyze this transcript and audio data to give structured feedback. Be strict and thorough.
 
 TRANSCRIPT:
 "${transcript}"
@@ -105,7 +105,7 @@ ANALYZE:
 4. FILLERS — Count and list filler words  
 5. JARGON — List technical or complex terms  
 6. STRUCTURE — Pitch flow and organization
-7. PERSUASIVENESS — Convincing techniques and power
+7. PERSUASION — Convincing techniques and power
 8. ENGAGEMENT — Vocal variety and energy
 9. IMPROVE — Rewrite for better flow and clarity IN THE SAME LANGUAGE as the input transcript
 
@@ -137,7 +137,7 @@ Respond only with valid JSON:
     "score": 0–100,
     "issues": ["...", "..."]
   },
-  "persuasiveness": {
+  "persuasion": {
     "score": 0–100,
     "techniques": ["...", "..."],
     "weaknesses": ["...", "..."]
