@@ -64,6 +64,32 @@ interface PitchAnalysis {
     examples: string[];
     severity: 'low' | 'medium' | 'high';
   };
+  // New fields from audioBasedAnalysis.ts
+  structure?: {
+    score: number;
+    issues: string[];
+  };
+  persuasion?: {
+    score: number;
+    techniques: string[];
+    weaknesses: string[];
+  };
+  engagement?: {
+    score: number;
+    vocal_variety: string;
+    energy_level: string;
+  };
+  // New fields from textBasedAnalysis.ts
+  persuasiveness?: {
+    score: number;
+    description: string;
+    suggestions: string[];
+  };
+  memorability?: {
+    score: number;
+    description: string;
+    suggestions: string[];
+  };
   improvedVersion: string;
   overallScore: number;
 }
@@ -266,6 +292,13 @@ function App() {
             examples: gptAnalysis.jargon?.examples || [],
             severity: gptAnalysis.jargon?.count > 5 ? 'high' : gptAnalysis.jargon?.count > 2 ? 'medium' : 'low'
           },
+          // New fields from audioBasedAnalysis.ts
+          structure: gptAnalysis.structure,
+          persuasion: gptAnalysis.persuasion,
+          engagement: gptAnalysis.engagement,
+          // Convert text-based analysis fields if available
+          persuasiveness: gptAnalysis.persuasiveness,
+          memorability: gptAnalysis.memorability,
           improvedVersion: gptAnalysis.improvedVersion,
           overallScore: response.data.overallResults?.combinedScore || gptAnalysis.overallScore
         };
@@ -897,6 +930,347 @@ function App() {
                           <Typography variant="body2" sx={{ color: '#b0bec5', mt: 2, fontStyle: 'italic' }}>
                             💡 Practice pausing instead of using filler words. Take a breath and gather your thoughts.
                           </Typography>
+                        </Box>
+                      )}
+                    </AccordionDetails>
+                  </Accordion>
+                )}
+
+                {/* Structure Analysis Accordion */}
+                {analysis.structure && (
+                  <Accordion 
+                    sx={{ 
+                      backgroundColor: '#1e1e2e', 
+                      color: 'white',
+                      mb: 1,
+                      '&:before': { display: 'none' }
+                    }}
+                  >
+                    <AccordionSummary 
+                      expandIcon={<ExpandMoreIcon sx={{ color: '#61dafb' }} />}
+                      sx={{ 
+                        backgroundColor: '#2a2a3e',
+                        '&:hover': { backgroundColor: '#3a3a4e' }
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
+                        <Typography variant="h6" sx={{ color: '#61dafb' }}>
+                          🏗️ Structure Analysis
+                        </Typography>
+                        <Chip 
+                          label={`${analysis.structure.score}/100`}
+                          size="small"
+                          sx={{ 
+                            backgroundColor: getScoreColor(analysis.structure.score / 10),
+                            color: 'white',
+                            fontWeight: 'bold',
+                            mr: 2
+                          }}
+                        />
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ backgroundColor: '#1e1e2e' }}>
+                      <Typography variant="body2" sx={{ color: '#e0e0e0', mb: 2 }}>
+                        A well-structured pitch follows a logical flow: Problem → Solution → Market → Ask.
+                      </Typography>
+                      {analysis.structure.issues && analysis.structure.issues.length > 0 && (
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ color: '#61dafb', mb: 1 }}>
+                            ⚠️ Structure Issues:
+                          </Typography>
+                          <List dense>
+                            {analysis.structure.issues.map((issue, index) => (
+                              <ListItem key={index} sx={{ py: 0.5, pl: 0 }}>
+                                <ListItemText 
+                                  primary={`• ${issue}`}
+                                  primaryTypographyProps={{
+                                    variant: 'body2',
+                                    sx: { color: '#e0e0e0' }
+                                  }}
+                                />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+                      )}
+                    </AccordionDetails>
+                  </Accordion>
+                )}
+
+                {/* Persuasion Analysis Accordion (from gptAnalysis.ts) */}
+                {analysis.persuasion && (
+                  <Accordion 
+                    sx={{ 
+                      backgroundColor: '#1e1e2e', 
+                      color: 'white',
+                      mb: 1,
+                      '&:before': { display: 'none' }
+                    }}
+                  >
+                    <AccordionSummary 
+                      expandIcon={<ExpandMoreIcon sx={{ color: '#61dafb' }} />}
+                      sx={{ 
+                        backgroundColor: '#2a2a3e',
+                        '&:hover': { backgroundColor: '#3a3a4e' }
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
+                        <Typography variant="h6" sx={{ color: '#61dafb' }}>
+                          🎯 Persuasion Analysis
+                        </Typography>
+                        <Chip 
+                          label={`${analysis.persuasion.score}/100`}
+                          size="small"
+                          sx={{ 
+                            backgroundColor: getScoreColor(analysis.persuasion.score / 10),
+                            color: 'white',
+                            fontWeight: 'bold',
+                            mr: 2
+                          }}
+                        />
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ backgroundColor: '#1e1e2e' }}>
+                      <Typography variant="body2" sx={{ color: '#e0e0e0', mb: 2 }}>
+                        Persuasive elements help convince investors and build credibility.
+                      </Typography>
+                      {analysis.persuasion.techniques && analysis.persuasion.techniques.length > 0 && (
+                        <Box mb={2}>
+                          <Typography variant="subtitle2" sx={{ color: '#61dafb', mb: 1 }}>
+                            ✅ Persuasive Techniques Used:
+                          </Typography>
+                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            {analysis.persuasion.techniques.map((technique, index) => (
+                              <Chip 
+                                key={index} 
+                                label={technique}
+                                size="small"
+                                sx={{ 
+                                  backgroundColor: '#4CAF50',
+                                  color: 'white',
+                                  mb: 0.5
+                                }}
+                              />
+                            ))}
+                          </Stack>
+                        </Box>
+                      )}
+                      {analysis.persuasion.weaknesses && analysis.persuasion.weaknesses.length > 0 && (
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ color: '#61dafb', mb: 1 }}>
+                            ⚠️ Areas for Improvement:
+                          </Typography>
+                          <List dense>
+                            {analysis.persuasion.weaknesses.map((weakness, index) => (
+                              <ListItem key={index} sx={{ py: 0.5, pl: 0 }}>
+                                <ListItemText 
+                                  primary={`• ${weakness}`}
+                                  primaryTypographyProps={{
+                                    variant: 'body2',
+                                    sx: { color: '#e0e0e0' }
+                                  }}
+                                />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+                      )}
+                    </AccordionDetails>
+                  </Accordion>
+                )}
+
+                {/* Engagement Analysis Accordion (from gptAnalysis.ts) */}
+                {analysis.engagement && (
+                  <Accordion 
+                    sx={{ 
+                      backgroundColor: '#1e1e2e', 
+                      color: 'white',
+                      mb: 1,
+                      '&:before': { display: 'none' }
+                    }}
+                  >
+                    <AccordionSummary 
+                      expandIcon={<ExpandMoreIcon sx={{ color: '#61dafb' }} />}
+                      sx={{ 
+                        backgroundColor: '#2a2a3e',
+                        '&:hover': { backgroundColor: '#3a3a4e' }
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
+                        <Typography variant="h6" sx={{ color: '#61dafb' }}>
+                          🎤 Vocal Engagement
+                        </Typography>
+                        <Chip 
+                          label={`${analysis.engagement.score}/100`}
+                          size="small"
+                          sx={{ 
+                            backgroundColor: getScoreColor(analysis.engagement.score / 10),
+                            color: 'white',
+                            fontWeight: 'bold',
+                            mr: 2
+                          }}
+                        />
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ backgroundColor: '#1e1e2e' }}>
+                      <Typography variant="body2" sx={{ color: '#e0e0e0', mb: 2 }}>
+                        Vocal variety and energy keep your audience engaged and interested.
+                      </Typography>
+                      <Box display="flex" gap={2} mb={2}>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ color: '#61dafb', mb: 1 }}>
+                            🎵 Vocal Variety:
+                          </Typography>
+                          <Chip 
+                            label={analysis.engagement.vocal_variety.toUpperCase()}
+                            size="small"
+                            sx={{ 
+                              backgroundColor: analysis.engagement.vocal_variety === 'high' ? '#4CAF50' : 
+                                            analysis.engagement.vocal_variety === 'medium' ? '#FF9800' : '#F44336',
+                              color: 'white',
+                              fontWeight: 'bold'
+                            }}
+                          />
+                        </Box>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ color: '#61dafb', mb: 1 }}>
+                            ⚡ Energy Level:
+                          </Typography>
+                          <Chip 
+                            label={analysis.engagement.energy_level.toUpperCase()}
+                            size="small"
+                            sx={{ 
+                              backgroundColor: analysis.engagement.energy_level === 'high' ? '#4CAF50' : 
+                                            analysis.engagement.energy_level === 'medium' ? '#FF9800' : '#F44336',
+                              color: 'white',
+                              fontWeight: 'bold'
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                      <Typography variant="body2" sx={{ color: '#b0bec5', fontStyle: 'italic' }}>
+                        💡 Vary your pitch, pace, and volume to maintain audience attention. Practice with emotion and enthusiasm.
+                      </Typography>
+                    </AccordionDetails>
+                  </Accordion>
+                )}
+
+                {/* Persuasiveness Analysis Accordion (from openai.ts) */}
+                {analysis.persuasiveness && (
+                  <Accordion 
+                    sx={{ 
+                      backgroundColor: '#1e1e2e', 
+                      color: 'white',
+                      mb: 1,
+                      '&:before': { display: 'none' }
+                    }}
+                  >
+                    <AccordionSummary 
+                      expandIcon={<ExpandMoreIcon sx={{ color: '#61dafb' }} />}
+                      sx={{ 
+                        backgroundColor: '#2a2a3e',
+                        '&:hover': { backgroundColor: '#3a3a4e' }
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
+                        <Typography variant="h6" sx={{ color: '#61dafb' }}>
+                          💼 Persuasiveness
+                        </Typography>
+                        <Chip 
+                          label={`${analysis.persuasiveness.score}/100`}
+                          size="small"
+                          sx={{ 
+                            backgroundColor: getScoreColor(analysis.persuasiveness.score / 10),
+                            color: 'white',
+                            fontWeight: 'bold',
+                            mr: 2
+                          }}
+                        />
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ backgroundColor: '#1e1e2e' }}>
+                      <Typography variant="body2" sx={{ color: '#e0e0e0', mb: 2 }}>
+                        {analysis.persuasiveness.description}
+                      </Typography>
+                      {(analysis.persuasiveness.suggestions || []).length > 0 && (
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ color: '#61dafb', mb: 1 }}>
+                            💡 Suggestions:
+                          </Typography>
+                          <List dense>
+                            {(analysis.persuasiveness.suggestions || []).map((suggestion, index) => (
+                              <ListItem key={index} sx={{ py: 0.5, pl: 0 }}>
+                                <ListItemText 
+                                  primary={`• ${suggestion}`}
+                                  primaryTypographyProps={{
+                                    variant: 'body2',
+                                    sx: { color: '#e0e0e0' }
+                                  }}
+                                />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+                      )}
+                    </AccordionDetails>
+                  </Accordion>
+                )}
+
+                {/* Memorability Analysis Accordion (from openai.ts) */}
+                {analysis.memorability && (
+                  <Accordion 
+                    sx={{ 
+                      backgroundColor: '#1e1e2e', 
+                      color: 'white',
+                      mb: 1,
+                      '&:before': { display: 'none' }
+                    }}
+                  >
+                    <AccordionSummary 
+                      expandIcon={<ExpandMoreIcon sx={{ color: '#61dafb' }} />}
+                      sx={{ 
+                        backgroundColor: '#2a2a3e',
+                        '&:hover': { backgroundColor: '#3a3a4e' }
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
+                        <Typography variant="h6" sx={{ color: '#61dafb' }}>
+                          🧠 Memorability
+                        </Typography>
+                        <Chip 
+                          label={`${analysis.memorability.score}/100`}
+                          size="small"
+                          sx={{ 
+                            backgroundColor: getScoreColor(analysis.memorability.score / 10),
+                            color: 'white',
+                            fontWeight: 'bold',
+                            mr: 2
+                          }}
+                        />
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ backgroundColor: '#1e1e2e' }}>
+                      <Typography variant="body2" sx={{ color: '#e0e0e0', mb: 2 }}>
+                        {analysis.memorability.description}
+                      </Typography>
+                      {(analysis.memorability.suggestions || []).length > 0 && (
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ color: '#61dafb', mb: 1 }}>
+                            💡 Suggestions:
+                          </Typography>
+                          <List dense>
+                            {(analysis.memorability.suggestions || []).map((suggestion, index) => (
+                              <ListItem key={index} sx={{ py: 0.5, pl: 0 }}>
+                                <ListItemText 
+                                  primary={`• ${suggestion}`}
+                                  primaryTypographyProps={{
+                                    variant: 'body2',
+                                    sx: { color: '#e0e0e0' }
+                                  }}
+                                />
+                              </ListItem>
+                            ))}
+                          </List>
                         </Box>
                       )}
                     </AccordionDetails>

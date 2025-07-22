@@ -15,7 +15,7 @@ function getOpenAIClient(): OpenAI {
   return openaiClient;
 }
 
-export interface PitchAnalysis {
+export interface TextBasedAnalysis {
   tone: {
     score: number;
     description: string;
@@ -31,16 +31,31 @@ export interface PitchAnalysis {
     examples: string[];
     severity: 'low' | 'medium' | 'high';
   };
+  structure: {
+    score: number;
+    description: string;
+    suggestions: string[];
+  };
+  persuasiveness: {
+    score: number;
+    description: string;
+    suggestions: string[];
+  };
+  memorability: {
+    score: number;
+    description: string;
+    suggestions: string[];
+  };
   improvedVersion: string;
   overallScore: number;
 }
 
-export async function analyzePitchWithOpenAI(pitchText: string): Promise<PitchAnalysis> {
+export async function analyzePitchWithTextBasedAnalysis(pitchText: string): Promise<TextBasedAnalysis> {
   try {
     const openai = getOpenAIClient();
 
     const prompt = `
-You are an expert pitch analyst. Analyze the following pitch and respond in **valid JSON** only.
+You are an expert pitch analyst. Analyze the following pitch and respond in **valid JSON** only. Be strict and thorough.
 
 Pitch:
 "${pitchText}"
@@ -62,6 +77,21 @@ Use this structure:
     "examples": ["...", "..."],
     "severity": "low/medium/high"
   },
+  "structure": {
+    "score": 0-100,
+    "description": "...",
+    "suggestions": ["...", "..."]
+  },
+  "persuasiveness": {
+    "score": 0-100,
+    "description": "...",
+    "suggestions": ["...", "..."]
+  },
+  "memorability": {
+    "score": 0-100,
+    "description": "...",
+    "suggestions": ["...", "..."]
+  },
   "improvedVersion": "...",
   "overallScore": 0-100
 }
@@ -70,6 +100,9 @@ Criteria:
 - Tone: confidence, enthusiasm, professionalism
 - Clarity: ease of understanding
 - Jargon: complexity, buzzwords
+- Structure: logical flow (problem → solution → market → ask)
+- Persuasiveness: compelling arguments, credibility, call-to-action
+- Memorability: hooks, storytelling, unique elements
 - Rewrite: clarity + impact IN THE SAME LANGUAGE as the input pitch
 - Overall: holistic score
 
@@ -99,10 +132,10 @@ Respond with JSON only. No extra text.`;
     }
 
     // Parse the JSON response
-    const analysis: PitchAnalysis = JSON.parse(content);
+    const analysis: TextBasedAnalysis = JSON.parse(content);
     
     // Validate the response structure
-    if (!analysis.tone || !analysis.clarity || !analysis.jargonCount || !analysis.improvedVersion) {
+    if (!analysis.tone || !analysis.clarity || !analysis.jargonCount || !analysis.structure || !analysis.persuasiveness || !analysis.memorability || !analysis.improvedVersion) {
       throw new Error('Invalid response structure from OpenAI');
     }
 
@@ -121,7 +154,7 @@ Respond with JSON only. No extra text.`;
 }
 
 // Fallback function for when OpenAI is not available
-export function getMockPitchAnalysis(pitchText: string): PitchAnalysis {
+export function getMockTextBasedAnalysis(pitchText: string): TextBasedAnalysis {
   // Simple analysis based on text characteristics
   const wordCount = pitchText.split(' ').length;
   const sentences = pitchText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
@@ -165,6 +198,30 @@ export function getMockPitchAnalysis(pitchText: string): PitchAnalysis {
       count: foundJargon.length,
       examples: foundJargon.slice(0, 3),
       severity: jargonSeverity
+    },
+    structure: {
+      score: 75,
+      description: "Good logical flow with room for improvement",
+      suggestions: [
+        "Clearly define the problem upfront",
+        "Add a stronger call-to-action"
+      ]
+    },
+    persuasiveness: {
+      score: 70,
+      description: "Moderately persuasive with some compelling elements",
+      suggestions: [
+        "Include specific metrics or proof points",
+        "Add customer testimonials or social proof"
+      ]
+    },
+    memorability: {
+      score: 65,
+      description: "Somewhat memorable but could be more engaging",
+      suggestions: [
+        "Start with a compelling hook or story",
+        "Use more vivid examples or analogies"
+      ]
     },
     improvedVersion: pitchText.replace(/revolutionary|disruptive|cutting-edge/gi, 'innovative')
       .replace(/leverage/gi, 'use')

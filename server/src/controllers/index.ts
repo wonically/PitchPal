@@ -3,8 +3,8 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { spawn } from 'child_process';
-import { analyzePitchWithOpenAI, getMockPitchAnalysis, validateOpenAIKey } from '../utils/openai';
-import { analyzeWithGPT } from '../utils/gptAnalysis';
+import { analyzePitchWithTextBasedAnalysis, getMockTextBasedAnalysis, validateOpenAIKey } from '../utils/textBasedAnalysis';
+import { analyzeWithAudioBasedAnalysis } from '../utils/audioBasedAnalysis';
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../../uploads');
@@ -157,23 +157,23 @@ export const analyzeAudio = async (req: Request, res: Response) => {
           
           console.log('Python analysis completed successfully');
           
-          // Extract transcript and features for GPT analysis
+          // Extract transcript and features for audio-based analysis
           const transcript = analysisResult.transcript || '';
           const features = analysisResult.features || {};
           
-          let gptAnalysis;
+          let audioBasedAnalysis;
           try {
-            // Run GPT analysis on transcript and features
-            console.log('Starting GPT analysis...');
-            gptAnalysis = await analyzeWithGPT(transcript, features);
-            console.log('GPT analysis completed successfully');
+            // Run audio-based analysis on transcript and features
+            console.log('Starting Audio-based analysis...');
+            audioBasedAnalysis = await analyzeWithAudioBasedAnalysis(transcript, features);
+            console.log('Audio-based analysis completed successfully');
           } catch (gptError) {
-            console.error('GPT analysis failed:', gptError);
-            // Continue with audio analysis results even if GPT fails
-            gptAnalysis = {
-              tone: { score: 0, description: "GPT analysis unavailable" },
-              confidence: { level: "Medium", evidence: ["GPT analysis failed"] },
-              clarity: { score: 0, issues: ["GPT analysis unavailable"] },
+            console.error('Audio-based analysis failed:', gptError);
+            // Continue with audio analysis results even if audio-based analysis fails
+            audioBasedAnalysis = {
+              tone: { score: 0, description: "Audio-based analysis unavailable" },
+              confidence: { level: "Medium", evidence: ["Audio-based analysis failed"] },
+              clarity: { score: 0, issues: ["Audio-based analysis unavailable"] },
               fillerWords: { count: 0, examples: [] },
               jargon: { count: 0, examples: [] },
               improvedVersion: transcript,
@@ -201,11 +201,11 @@ export const analyzeAudio = async (req: Request, res: Response) => {
               transcript_details: analysisResult.transcript_details,
               metadata: analysisResult.metadata
             },
-            gptAnalysis: gptAnalysis,
+            gptAnalysis: audioBasedAnalysis,
             overallResults: {
               audioScore: analysisResult.analysis?.overall_score || 0,
-              gptScore: gptAnalysis.overallScore || 0,
-              combinedScore: Math.round(((analysisResult.analysis?.overall_score || 0) + (gptAnalysis.overallScore || 0)) / 2),
+              gptScore: audioBasedAnalysis.overallScore || 0,
+              combinedScore: Math.round(((analysisResult.analysis?.overall_score || 0) + (audioBasedAnalysis.overallScore || 0)) / 2),
               processingTimestamp: new Date().toISOString()
             }
           });
@@ -319,8 +319,8 @@ export const analyzePitch = async (req: Request, res: Response) => {
     }
 
     try {
-      // Try OpenAI analysis
-      const analysis = await analyzePitchWithOpenAI(pitchText);
+      // Try text-based analysis
+      const analysis = await analyzePitchWithTextBasedAnalysis(pitchText);
       
       res.json({
         success: true,

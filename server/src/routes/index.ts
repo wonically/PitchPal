@@ -18,7 +18,7 @@ router.post('/analyze', uploadAudio, analyzeAudio);
 // Test OpenAI connection
 router.get('/test-openai', async (req, res) => {
   try {
-    const { validateOpenAIKey } = require('../utils/openai');
+    const { validateOpenAIKey } = require('../utils/textBasedAnalysis');
     const isValid = validateOpenAIKey();
     res.json({
       openaiConfigured: isValid,

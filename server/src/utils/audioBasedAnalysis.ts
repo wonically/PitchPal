@@ -28,7 +28,7 @@ interface AudioFeatures {
   voice_quality_score?: number;
 }
 
-interface GPTAnalysisResult {
+interface AudioBasedAnalysisResult {
   tone: {
     score: number;
     description: string;
@@ -49,6 +49,20 @@ interface GPTAnalysisResult {
     count: number;
     examples: string[];
   };
+  structure: {
+    score: number;
+    issues: string[];
+  };
+  persuasion: {
+    score: number;
+    techniques: string[];
+    weaknesses: string[];
+  };
+  engagement: {
+    score: number;
+    vocal_variety: string;
+    energy_level: string;
+  };
   improvedVersion: string;
   overallScore: number;
 }
@@ -57,17 +71,17 @@ interface GPTAnalysisResult {
  * Analyze transcript and audio features using GPT-4
  * @param transcript - The transcribed text from audio
  * @param features - Audio prosodic features extracted from analysis
- * @returns Promise<GPTAnalysisResult> - Structured analysis from GPT-4
+ * @returns Promise<AudioBasedAnalysisResult> - Structured analysis from GPT-4
  */
-export async function analyzeWithGPT(
+export async function analyzeWithAudioBasedAnalysis(
   transcript: string,
   features: AudioFeatures
-): Promise<GPTAnalysisResult> {
+): Promise<AudioBasedAnalysisResult> {
   try {
     // Get OpenAI client (lazy initialization)
     const client = getOpenAIClient();
     
-    const prompt = `You are a speech and communication coach. Analyze this transcript and audio data to give structured feedback.
+    const prompt = `You are a speech and communication coach. Analyze this transcript and audio data to give structured feedback. Be strict and thorough.
 
 TRANSCRIPT:
 "${transcript}"
@@ -90,7 +104,10 @@ ANALYZE:
 3. CLARITY — From both audio and wording  
 4. FILLERS — Count and list filler words  
 5. JARGON — List technical or complex terms  
-6. IMPROVE — Rewrite for better flow and clarity IN THE SAME LANGUAGE as the input transcript
+6. STRUCTURE — Pitch flow and organization
+7. PERSUASIVENESS — Convincing techniques and power
+8. ENGAGEMENT — Vocal variety and energy
+9. IMPROVE — Rewrite for better flow and clarity IN THE SAME LANGUAGE as the input transcript
 
 IMPORTANT: Detect the language of the input transcript and provide the "improvedVersion" in that same language. All other analysis should remain in English.
 
@@ -115,6 +132,20 @@ Respond only with valid JSON:
   "jargon": {
     "count": number,
     "examples": ["...", "..."]
+  },
+  "structure": {
+    "score": 0–100,
+    "issues": ["...", "..."]
+  },
+  "persuasiveness": {
+    "score": 0–100,
+    "techniques": ["...", "..."],
+    "weaknesses": ["...", "..."]
+  },
+  "engagement": {
+    "score": 0–100,
+    "vocal_variety": "low/medium/high",
+    "energy_level": "low/medium/high"
   },
   "improvedVersion": "...",
   "overallScore": 0–100
@@ -150,10 +181,10 @@ Respond only with valid JSON:
     }
 
     // Parse the JSON response
-    const analysis: GPTAnalysisResult = JSON.parse(jsonString);
+    const analysis: AudioBasedAnalysisResult = JSON.parse(jsonString);
 
     // Validate required fields and provide defaults if missing
-    const validatedAnalysis: GPTAnalysisResult = {
+    const validatedAnalysis: AudioBasedAnalysisResult = {
       tone: {
         score: analysis.tone?.score || 0,
         description: analysis.tone?.description || "Analysis unavailable"
@@ -174,6 +205,20 @@ Respond only with valid JSON:
         count: analysis.jargon?.count || 0,
         examples: analysis.jargon?.examples || []
       },
+      structure: {
+        score: analysis.structure?.score || 0,
+        issues: analysis.structure?.issues || []
+      },
+      persuasion: {
+        score: analysis.persuasion?.score || 0,
+        techniques: analysis.persuasion?.techniques || [],
+        weaknesses: analysis.persuasion?.weaknesses || []
+      },
+      engagement: {
+        score: analysis.engagement?.score || 0,
+        vocal_variety: analysis.engagement?.vocal_variety || "medium",
+        energy_level: analysis.engagement?.energy_level || "medium"
+      },
       improvedVersion: analysis.improvedVersion || transcript,
       overallScore: analysis.overallScore || 0
     };
@@ -181,7 +226,7 @@ Respond only with valid JSON:
     return validatedAnalysis;
 
   } catch (error) {
-    console.error('GPT Analysis error:', error);
+    console.error('Audio-based Analysis error:', error);
     
     // Return default analysis structure on error
     return {
@@ -204,6 +249,20 @@ Respond only with valid JSON:
       jargon: {
         count: 0,
         examples: []
+      },
+      structure: {
+        score: 0,
+        issues: ["Unable to analyze structure due to processing error"]
+      },
+      persuasion: {
+        score: 0,
+        techniques: [],
+        weaknesses: ["Unable to analyze persuasion due to processing error"]
+      },
+      engagement: {
+        score: 0,
+        vocal_variety: "medium",
+        energy_level: "medium"
       },
       improvedVersion: transcript,
       overallScore: 0
