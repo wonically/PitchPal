@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { spawn } from 'child_process';
-import { analyzePitchWithTextBasedAnalysis, getMockTextBasedAnalysis, validateOpenAIKey } from '../utils/textBasedAnalysis';
+import { analyzePitchWithTextBasedAnalysis, validateOpenAIKey } from '../utils/textBasedAnalysis';
 import { analyzeWithAudioBasedAnalysis } from '../utils/audioBasedAnalysis';
 
 // Ensure uploads directory exists
