@@ -30,7 +30,8 @@ import {
   Send as SendIcon,
   Psychology as PsychologyIcon,
   ExpandMore as ExpandMoreIcon,
-  History as HistoryIcon
+  History as HistoryIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import './App.css';
 import AudioInput from './components/AudioInput';
@@ -123,6 +124,12 @@ function App() {
   const [currentTab, setCurrentTab] = useState<number>(0);
   const [pitchHistory, setPitchHistory] = useState<StoredAnalysis[]>([]);
   
+  // Retry mechanism state
+  const [lastSubmissionData, setLastSubmissionData] = useState<{
+    type: 'text' | 'audio';
+    data: string | File;
+  } | null>(null);
+  
   // Toast state
   const [toastOpen, setToastOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string>('');
@@ -193,20 +200,32 @@ function App() {
       return;
     }
 
+    // Store submission data for retry functionality
+    setLastSubmissionData({
+      type: 'text',
+      data: pitchText.trim()
+    });
+
+    await performTextAnalysis(pitchText.trim());
+  };
+
+  const performTextAnalysis = async (textToAnalyze: string) => {
     setLoading(true);
     setError('');
     setAnalysis(null);
 
     try {
       const response = await axios.post<AnalysisResponse>('http://localhost:3001/api/', {
-        pitchText: pitchText.trim(),
+        pitchText: textToAnalyze,
         analysisType: 'general'
       });
 
       if (response.data.success) {
         setAnalysis(response.data.data.analysis);
-        saveAnalysisToHistory(response.data.data.analysis, pitchText.trim(), 'text');
+        saveAnalysisToHistory(response.data.data.analysis, textToAnalyze, 'text');
         showToast('Analysis complete!', 'success');
+        // Clear retry data on successful analysis
+        setLastSubmissionData(null);
       } else {
         setError('Failed to analyze pitch');
         showToast('Failed to analyze pitch', 'error');
@@ -250,6 +269,16 @@ function App() {
   const handleAudioReady = async (audioFile: File, mode: 'record' | 'upload') => {
     console.log('Audio ready for analysis:', { filename: audioFile.name, size: audioFile.size, mode });
     
+    // Store submission data for retry functionality
+    setLastSubmissionData({
+      type: 'audio',
+      data: audioFile
+    });
+
+    await performAudioAnalysis(audioFile);
+  };
+
+  const performAudioAnalysis = async (audioFile: File) => {
     setLoading(true);
     setError('');
     setAnalysis(null);
@@ -306,6 +335,8 @@ function App() {
         setAnalysis(transformedAnalysis);
         saveAnalysisToHistory(transformedAnalysis, response.data.transcript || 'Audio analysis', 'audio');
         showToast('Audio analysis complete!', 'success');
+        // Clear retry data on successful analysis
+        setLastSubmissionData(null);
       } else {
         setError('Failed to analyze audio');
         showToast('Failed to analyze audio', 'error');
@@ -328,6 +359,16 @@ function App() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRetry = async () => {
+    if (!lastSubmissionData) return;
+
+    if (lastSubmissionData.type === 'text') {
+      await performTextAnalysis(lastSubmissionData.data as string);
+    } else if (lastSubmissionData.type === 'audio') {
+      await performAudioAnalysis(lastSubmissionData.data as File);
     }
   };
 
@@ -548,19 +589,49 @@ function App() {
 
         {/* Error Display */}
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 4,
-              backgroundColor: '#ffebee',
-              color: '#c62828',
-              '& .MuiAlert-icon': {
+          <Box sx={{ mb: 4 }}>
+            <Alert 
+              severity="error" 
+              sx={{ 
+                backgroundColor: '#ffebee',
                 color: '#c62828',
-              },
-            }}
-          >
-            {error}
-          </Alert>
+                '& .MuiAlert-icon': {
+                  color: '#c62828',
+                },
+              }}
+            >
+              <Box display="flex" flexDirection="column" gap={2}>
+                <Typography variant="body2">
+                  {error}
+                </Typography>
+                {lastSubmissionData && (
+                  <Box display="flex" justifyContent="flex-start">
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleRetry}
+                      disabled={loading}
+                      startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
+                      sx={{
+                        backgroundColor: '#c62828',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        '&:hover': {
+                          backgroundColor: '#b71c1c',
+                        },
+                        '&:disabled': {
+                          backgroundColor: '#999',
+                          color: '#ccc',
+                        },
+                      }}
+                    >
+                      {loading ? 'Retrying...' : 'Retry Analysis'}
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            </Alert>
+          </Box>
         )}
 
         {analysis && (
@@ -624,7 +695,7 @@ function App() {
                   >
                     <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                       <Typography variant="h6" sx={{ color: '#61dafb' }}>
-                        🎯 Tone Analysis
+                        🎯 Tone
                       </Typography>
                       <Chip 
                         label={`${analysis.tone.score}/100`}
@@ -683,7 +754,7 @@ function App() {
                   >
                     <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                       <Typography variant="h6" sx={{ color: '#61dafb' }}>
-                        🔍 Clarity Analysis
+                        🔍 Clarity
                       </Typography>
                       <Chip 
                         label={`${analysis.clarity.score}/100`}
@@ -742,7 +813,7 @@ function App() {
                   >
                     <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                       <Typography variant="h6" sx={{ color: '#61dafb' }}>
-                        📚 Jargon Analysis
+                        📚 Jargon
                       </Typography>
                       <Box display="flex" alignItems="center" gap={1}>
                         <Chip 
@@ -816,7 +887,7 @@ function App() {
                     >
                       <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                         <Typography variant="h6" sx={{ color: '#61dafb' }}>
-                          💪 Confidence Analysis
+                          💪 Confidence
                         </Typography>
                         <Chip 
                           label={analysis.confidence.level.toUpperCase()}
@@ -955,7 +1026,7 @@ function App() {
                     >
                       <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                         <Typography variant="h6" sx={{ color: '#61dafb' }}>
-                          🏗️ Structure Analysis
+                          🏗️ Structure
                         </Typography>
                         <Chip 
                           label={`${analysis.structure.score}/100`}
@@ -1016,7 +1087,7 @@ function App() {
                     >
                       <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                         <Typography variant="h6" sx={{ color: '#61dafb' }}>
-                          🎯 Persuasion Analysis
+                          🎯 Persuasion
                         </Typography>
                         <Chip 
                           label={`${analysis.persuasion.score}/100`}
@@ -1422,7 +1493,7 @@ function App() {
                           >
                             <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                               <Typography variant="h6" sx={{ color: '#61dafb' }}>
-                                🎯 Tone Analysis
+                                🎯 Tone
                               </Typography>
                               <Chip 
                                 label={`${storedAnalysis.analysis.tone.score}/100`}
@@ -1481,7 +1552,7 @@ function App() {
                           >
                             <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                               <Typography variant="h6" sx={{ color: '#61dafb' }}>
-                                🔍 Clarity Analysis
+                                🔍 Clarity
                               </Typography>
                               <Chip 
                                 label={`${storedAnalysis.analysis.clarity.score}/100`}
@@ -1541,7 +1612,7 @@ function App() {
                             >
                               <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
                                 <Typography variant="h6" sx={{ color: '#61dafb' }}>
-                                  💪 Confidence Analysis
+                                  💪 Confidence
                                 </Typography>
                                 <Chip 
                                   label={storedAnalysis.analysis.confidence.level.toUpperCase()}
