@@ -63,39 +63,55 @@ Upload and analyze an audio file.
 **Response:**
 ```json
 {
-  "success": true,
-  "fileInfo": {
-    "path": "/path/to/uploaded/file",
-    "filename": "generated-filename.wav",
-    "originalName": "original-filename.wav",
-    "size": 1234567,
-    "mimeType": "audio/wav"
+  "transcript": "Thank you for listening to my pitch presentation...",
+  "features": {
+    "pitch": 185.4,
+    "jitter": 0.012,
+    "loudness": -18.2,
+    "speech_rate": 155.3,
+    "pitch_std": 45.2,
+    "pitch_range": 120.8,
+    "shimmer": 0.08,
+    "hnr": 15.6,
+    "spectral_centroid": 2847.3,
+    "energy_mean": 0.15,
+    "voice_quality_score": 82.1
   },
   "analysis": {
-    "audio_features": {
-      "duration": 30.5,
-      "avg_pitch": 220.5,
-      "pitch_range": 45.2,
-      "avg_volume": 0.15,
-      "clarity_score": 85.3
-    },
-    "transcript": {
-      "transcript": "Transcribed text...",
-      "confidence": 0.85,
-      "word_count": 25,
-      "speaking_rate": 150
-    },
-    "analysis": {
-      "overall_score": 78.5,
-      "pitch_variety": 82.0,
-      "volume_consistency": 75.0,
-      "clarity": 85.0,
-      "pace_score": 72.0,
-      "recommendations": [
-        "Try varying your pitch more to keep listeners engaged"
-      ]
-    }
-  }
+    "overall_score": 78.5,
+    "pitch_variety": 82.0,
+    "voice_quality": 85.2,
+    "volume_consistency": 75.0,
+    "pace_score": 72.0,
+    "recommendations": [
+      "Try varying your pitch more to add expressiveness and keep listeners engaged"
+    ],
+    "strengths": [
+      "Clear voice quality",
+      "Appropriate speaking pace"
+    ]
+  },
+  "transcript_details": {
+    "language": "en",
+    "duration": 45.2,
+    "word_count": 117,
+    "confidence": 0.91,
+    "segments": [
+      {
+        "start": 0.0,
+        "end": 3.2,
+        "text": "Thank you for listening to my pitch presentation",
+        "confidence": 0.94
+      }
+    ]
+  },
+  "metadata": {
+    "file_name": "audio-1234567890.wav",
+    "file_size": 2156784,
+    "extraction_method": "opensmile",
+    "processing_timestamp": "2024-01-01T00:00:00Z"
+  },
+  "success": true
 }
 ```
 
@@ -132,27 +148,32 @@ server/
 
 ## Audio Analysis Features
 
-The Python script (`analyze_audio.py`) provides:
+The enhanced Python script (`analyze_audio.py`) provides:
 
-- **Audio Features:**
-  - Duration, sample rate
-  - Average pitch and pitch range
-  - Volume analysis and consistency
-  - Tempo detection
-  - Spectral analysis
-  - Speech clarity metrics
-
-- **Transcript Analysis (Mock):**
-  - Speech-to-text transcription (placeholder)
+- **Real Speech-to-Text Transcription:**
+  - OpenAI Whisper integration for accurate transcription
+  - Language detection and confidence scoring
+  - Word-level timestamps and segments
   - Speaking rate calculation
-  - Confidence scoring
 
-- **Pitch Analysis Scoring:**
-  - Overall presentation score (0-100)
-  - Pitch variety assessment
-  - Volume consistency rating
-  - Clarity and pace evaluation
-  - Personalized recommendations
+- **Professional Prosodic Features (OpenSMILE):**
+  - **Pitch Analysis**: Mean, standard deviation, range, and variability
+  - **Voice Quality**: Jitter (pitch stability), HNR (Harmonics-to-Noise Ratio)
+  - **Loudness Features**: Mean, standard deviation, range, and variability
+  - **Voice Stability**: Shimmer (amplitude stability) and energy features
+  - **Spectral Analysis**: Spectral centroid and frequency distribution
+
+- **Advanced Audio Metrics:**
+  - Pitch variety and expressiveness scoring
+  - Voice quality assessment (0-100 scale)
+  - Volume consistency evaluation
+  - Speaking pace optimization analysis
+
+- **Comprehensive Analysis Output:**
+  - Overall presentation score with detailed breakdowns
+  - Personalized recommendations for improvement
+  - Identification of vocal strengths
+  - Professional-grade feature extraction
 
 ## Dependencies
 
@@ -164,9 +185,11 @@ The Python script (`analyze_audio.py`) provides:
 - TypeScript: Type safety
 
 ### Python
-- librosa: Audio analysis library
-- numpy: Numerical computing
-- soundfile: Audio file I/O
+- **openai-whisper**: Real speech-to-text transcription
+- **opensmile**: Professional prosodic feature extraction
+- **librosa**: Audio analysis library (fallback)
+- **numpy**: Numerical computing
+- **soundfile**: Audio file I/O
 
 ## Development
 
@@ -186,8 +209,12 @@ The API provides detailed error responses for:
 
 ## Future Enhancements
 
-- Real speech-to-text integration (OpenAI Whisper, Google Speech-to-Text)
-- Advanced pitch analysis algorithms
+- Multi-language transcription support with Whisper
+- Custom OpenSMILE feature sets for specific use cases  
+- Real-time audio analysis with streaming support
+- Integration with advanced speech coaching algorithms
 - User authentication and session management
+- Historical analysis tracking and progress monitoring
 - Audio preprocessing and noise reduction
 - Machine learning model integration for presentation scoring
+- Export capabilities for detailed analysis reports

@@ -1,3 +1,5 @@
+openai-whisper>=20230314
+opensmile>=2.4.2
 librosa>=0.10.0
 numpy>=1.21.0
 soundfile>=0.12.0
