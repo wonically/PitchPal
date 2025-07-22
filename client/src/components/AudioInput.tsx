@@ -1,4 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  ToggleButton,
+  ToggleButtonGroup,
+  Stack,
+  Chip,
+  Paper
+} from '@mui/material';
+import {
+  Mic as MicIcon,
+  Stop as StopIcon,
+  CloudUpload as UploadIcon,
+  Replay as ReplayIcon,
+  VolumeUp as VolumeIcon
+} from '@mui/icons-material';
 import './AudioInput.css';
 
 interface AudioInputProps {
@@ -252,13 +271,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
     }
   };
 
-  const resetRecording = () => {
-    setRecordingState('idle');
-    setRecordedAudio(null);
-    setRecordingDuration(0);
-    audioChunksRef.current = [];
-  };
-
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -276,180 +288,298 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
   };
 
   return (
-    <div className="audio-input-content">
-      <h3>Audio Pitch Input</h3>
-      
-      {/* Mode Toggle */}
-      <div className="mode-toggle">
-        <button
-          className={`mode-button ${inputMode === 'record' ? 'active' : ''}`}
-          onClick={() => handleModeSwitch('record')}
-          disabled={disabled}
-        >
-          🎤 Record Pitch
-        </button>
-        <button
-          className={`mode-button ${inputMode === 'upload' ? 'active' : ''}`}
-          onClick={() => handleModeSwitch('upload')}
-          disabled={disabled}
-        >
-          📁 Upload Pitch
-        </button>
-      </div>
+    <Card sx={{ backgroundColor: '#2a2a3e', color: 'white' }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom sx={{ color: '#61dafb', textAlign: 'center' }}>
+          Audio Pitch Input
+        </Typography>
+        
+        {/* Mode Toggle */}
+        <Box display="flex" justifyContent="center" mb={3}>
+          <ToggleButtonGroup
+            value={inputMode}
+            exclusive
+            onChange={(_, newMode) => newMode && handleModeSwitch(newMode)}
+            aria-label="input mode"
+            disabled={disabled}
+            sx={{
+              '& .MuiToggleButton-root': {
+                color: '#b0bec5',
+                borderColor: '#61dafb',
+                '&.Mui-selected': {
+                  backgroundColor: '#61dafb',
+                  color: '#1e1e2e',
+                  '&:hover': {
+                    backgroundColor: '#4fc3f7',
+                  },
+                },
+              },
+            }}
+          >
+            <ToggleButton value="record" aria-label="record">
+              <MicIcon sx={{ mr: 1 }} />
+              Record Pitch
+            </ToggleButton>
+            <ToggleButton value="upload" aria-label="upload">
+              <UploadIcon sx={{ mr: 1 }} />
+              Upload Pitch
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
 
-      {/* Recording Mode */}
-      {inputMode === 'record' && (
-        <div className="recording-section">
-          <div className="recording-controls">
+        {/* Recording Mode */}
+        {inputMode === 'record' && (
+          <Box>
             {recordingState === 'idle' && (
-              <button
-                className="record-button start"
-                onClick={handleStartRecording}
-                disabled={disabled}
-              >
-                <span className="record-icon">🎤</span>
-                Start Recording
-              </button>
+              <Box display="flex" justifyContent="center">
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={handleStartRecording}
+                  disabled={disabled}
+                  startIcon={<MicIcon />}
+                  sx={{
+                    backgroundColor: '#61dafb',
+                    color: '#1e1e2e',
+                    fontWeight: 'bold',
+                    px: 4,
+                    py: 1.5,
+                    '&:hover': {
+                      backgroundColor: '#4fc3f7',
+                    },
+                    '&:disabled': {
+                      backgroundColor: '#555',
+                      color: '#999',
+                    },
+                  }}
+                >
+                  Start Recording
+                </Button>
+              </Box>
             )}
             
             {recordingState === 'recording' && (
-              <div className="recording-active">
-                <button
-                  className="record-button stop"
+              <Box textAlign="center">
+                <Button
+                  variant="contained"
+                  size="large"
                   onClick={handleStopRecording}
                   disabled={disabled}
+                  startIcon={<StopIcon />}
+                  sx={{
+                    backgroundColor: '#f44336',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    px: 4,
+                    py: 1.5,
+                    mb: 2,
+                    '&:hover': {
+                      backgroundColor: '#d32f2f',
+                    },
+                  }}
                 >
-                  <span className="record-icon recording">⏹️</span>
                   Stop Recording
-                </button>
-                <div className="recording-timer">
-                  <span className="recording-indicator">🔴</span>
-                  {formatTimerDisplay(recordingDuration)}
-                </div>
-                <div className="volume-meter">
-                  <div className="volume-label">🔊 Volume:</div>
-                  <div className="volume-bars">
-                    {Array.from({ length: 20 }, (_, i) => (
-                      <div 
-                        key={i}
-                        className={`volume-bar ${i < volumeLevel * 20 ? 'active' : ''}`}
-                        style={{
-                          backgroundColor: i < volumeLevel * 20 
-                            ? (i > 16 ? '#ff4444' : i > 10 ? '#ffaa00' : '#44ff44')
-                            : 'rgba(255, 255, 255, 0.1)'
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
+                </Button>
+                
+                <Box display="flex" alignItems="center" justifyContent="center" gap={2} mb={2}>
+                  <Chip 
+                    icon={<Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#f44336' }} />}
+                    label={formatTimerDisplay(recordingDuration)}
+                    sx={{ 
+                      backgroundColor: '#1e1e2e',
+                      color: '#f44336',
+                      fontWeight: 'bold',
+                      fontSize: '1.1rem'
+                    }}
+                  />
+                </Box>
+                
+                <Box>
+                  <Stack direction="row" alignItems="center" spacing={1} justifyContent="center">
+                    <VolumeIcon sx={{ color: '#61dafb' }} />
+                    <Typography variant="body2" sx={{ color: '#b0bec5' }}>Volume:</Typography>
+                    <Box display="flex" gap={0.5}>
+                      {Array.from({ length: 20 }, (_, i) => (
+                        <Box
+                          key={i}
+                          sx={{
+                            width: 4,
+                            height: 20,
+                            backgroundColor: i < volumeLevel * 20 
+                              ? (i > 16 ? '#ff4444' : i > 10 ? '#ffaa00' : '#44ff44')
+                              : 'rgba(255, 255, 255, 0.1)',
+                            borderRadius: 0.5
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </Stack>
+                </Box>
+              </Box>
             )}
             
             {recordingState === 'recorded' && (
-              <div className="recording-complete">
-                <p>Recording complete! Duration: {formatDuration(Math.max(0, recordingDuration - 3))}</p>
-                <div className="recording-actions">
-                  <button
-                    className="action-button secondary"
+              <Box textAlign="center">
+                <Typography variant="body1" sx={{ color: '#e0e0e0', mb: 2 }}>
+                  Recording complete! Duration: {formatDuration(Math.max(0, recordingDuration - 3))}
+                </Typography>
+                <Stack direction="row" spacing={2} justifyContent="center">
+                  <Button
+                    variant="outlined"
                     onClick={() => {
                       setRecordingState('idle');
                       setRecordedAudio(null);
                       setRecordingDuration(0);
                     }}
                     disabled={disabled}
+                    startIcon={<ReplayIcon />}
+                    sx={{
+                      borderColor: '#61dafb',
+                      color: '#61dafb',
+                      '&:hover': {
+                        borderColor: '#4fc3f7',
+                        backgroundColor: 'rgba(97, 218, 251, 0.1)',
+                      },
+                    }}
                   >
                     Record Again
-                  </button>
-                  <button
-                    className="action-button primary"
+                  </Button>
+                  <Button
+                    variant="contained"
                     onClick={handleFinishRecording}
                     disabled={disabled}
+                    sx={{
+                      backgroundColor: '#4caf50',
+                      color: 'white',
+                      '&:hover': {
+                        backgroundColor: '#388e3c',
+                      },
+                    }}
                   >
                     Use This Recording
-                  </button>
-                </div>
-              </div>
+                  </Button>
+                </Stack>
+              </Box>
             )}
-          </div>
-        </div>
-      )}
+          </Box>
+        )}
 
-      {/* Upload Mode */}
-      {inputMode === 'upload' && (
-        <div className="upload-section">
-          <div className="file-upload-area">
+        {/* Upload Mode */}
+        {inputMode === 'upload' && (
+          <Box>
             <input
               ref={fileInputRef}
               type="file"
               accept=".mp3,.wav,audio/mp3,audio/mpeg,audio/wav"
               onChange={handleFileUpload}
               disabled={disabled}
-              className="file-input"
+              style={{ display: 'none' }}
               id="audio-file-input"
             />
-            <label htmlFor="audio-file-input" className="file-upload-label">
-              <div className="upload-icon">📁</div>
-              <div className="upload-text">
+            <label htmlFor="audio-file-input">
+              <Paper
+                elevation={2}
+                sx={{
+                  p: 4,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  backgroundColor: '#1e1e2e',
+                  border: '2px dashed #61dafb',
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    backgroundColor: '#2a2a3e',
+                    borderColor: '#4fc3f7',
+                  },
+                }}
+                component="div"
+              >
+                <UploadIcon sx={{ fontSize: 48, color: '#61dafb', mb: 2 }} />
                 {uploadedFile ? (
-                  <div>
-                    <strong>{uploadedFile.name}</strong>
-                    <br />
-                    <small>{(uploadedFile.size / 1024 / 1024).toFixed(2)} MB</small>
-                  </div>
+                  <Box>
+                    <Typography variant="h6" sx={{ color: '#e0e0e0', fontWeight: 'bold' }}>
+                      {uploadedFile.name}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#b0bec5' }}>
+                      {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </Typography>
+                  </Box>
                 ) : (
-                  <div>
-                    Click to select an audio file
-                    <br />
-                    <small>Supports MP3 and WAV files (max 10MB)</small>
-                  </div>
+                  <Box>
+                    <Typography variant="h6" sx={{ color: '#e0e0e0' }}>
+                      Click to select an audio file
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#b0bec5' }}>
+                      Supports MP3 and WAV files (max 10MB)
+                    </Typography>
+                  </Box>
                 )}
-              </div>
+              </Paper>
             </label>
-          </div>
-          
-          {uploadedFile && (
-            <div className="upload-complete">
-              <div className="upload-actions">
-                <button
-                  className="action-button secondary"
-                  onClick={() => {
-                    setUploadedFile(null);
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = '';
-                    }
-                  }}
-                  disabled={disabled}
-                >
-                  Choose Different File
-                </button>
-                <button
-                  className="action-button primary"
-                  onClick={handleFinishUpload}
-                  disabled={disabled}
-                >
-                  Use This File
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+            
+            {uploadedFile && (
+              <Box mt={3}>
+                <Stack direction="row" spacing={2} justifyContent="center">
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      setUploadedFile(null);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                    disabled={disabled}
+                    startIcon={<ReplayIcon />}
+                    sx={{
+                      borderColor: '#61dafb',
+                      color: '#61dafb',
+                      '&:hover': {
+                        borderColor: '#4fc3f7',
+                        backgroundColor: 'rgba(97, 218, 251, 0.1)',
+                      },
+                    }}
+                  >
+                    Choose Different File
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleFinishUpload}
+                    disabled={disabled}
+                    sx={{
+                      backgroundColor: '#4caf50',
+                      color: 'white',
+                      '&:hover': {
+                        backgroundColor: '#388e3c',
+                      },
+                    }}
+                  >
+                    Use This File
+                  </Button>
+                </Stack>
+              </Box>
+            )}
+          </Box>
+        )}
 
       {/* Audio Preview */}
-      {getAudioPreviewUrl() && (
-        <div className="audio-preview">
-          <h4>Audio Preview</h4>
-          <audio
-            ref={audioPreviewRef}
-            controls
-            src={getAudioPreviewUrl()!}
-            className="audio-player"
-          >
-            Your browser does not support the audio element.
-          </audio>
-        </div>
-      )}
-    </div>
+        {/* Audio Preview */}
+        {getAudioPreviewUrl() && (
+          <Box mt={3} textAlign="center">
+            <Typography variant="h6" gutterBottom sx={{ color: '#61dafb' }}>
+              Audio Preview
+            </Typography>
+            <audio
+              ref={audioPreviewRef}
+              controls
+              src={getAudioPreviewUrl()!}
+              style={{ width: '100%', maxWidth: 400 }}
+            >
+              Your browser does not support the audio element.
+            </audio>
+          </Box>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
