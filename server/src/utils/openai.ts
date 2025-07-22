@@ -62,7 +62,7 @@ Use this structure:
     "examples": ["...", "..."],
     "severity": "low/medium/high"
   },
-  "improvedVersion": "...", (same language as pitch)
+  "improvedVersion": "...",
   "overallScore": 0-100
 }
 
@@ -70,8 +70,10 @@ Criteria:
 - Tone: confidence, enthusiasm, professionalism
 - Clarity: ease of understanding
 - Jargon: complexity, buzzwords
-- Rewrite: clarity + impact
+- Rewrite: clarity + impact IN THE SAME LANGUAGE as the input pitch
 - Overall: holistic score
+
+IMPORTANT: Detect the language of the input pitch and provide the "improvedVersion" in that same language. All other analysis should remain in English.
 
 Respond with JSON only. No extra text.`;
 
@@ -80,7 +82,7 @@ Respond with JSON only. No extra text.`;
       messages: [
         {
           role: "system",
-          content: "You are a professional pitch analyst. Respond only with valid JSON containing the pitch analysis."
+          content: "You are a professional pitch analyst. Respond only with valid JSON containing the pitch analysis. IMPORTANT: The improvedVersion field must be in the same language as the input pitch, while all other fields remain in English."
         },
         {
           role: "user",

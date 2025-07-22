@@ -90,7 +90,9 @@ ANALYZE:
 3. CLARITY — From both audio and wording  
 4. FILLERS — Count and list filler words  
 5. JARGON — List technical or complex terms  
-6. IMPROVE — Rewrite for better flow and clarity
+6. IMPROVE — Rewrite for better flow and clarity IN THE SAME LANGUAGE as the input transcript
+
+IMPORTANT: Detect the language of the input transcript and provide the "improvedVersion" in that same language. All other analysis should remain in English.
 
 Respond only with valid JSON:
 {
@@ -114,7 +116,7 @@ Respond only with valid JSON:
     "count": number,
     "examples": ["...", "..."]
   },
-  "improvedVersion": "...", (same language as transcript)
+  "improvedVersion": "...",
   "overallScore": 0–100
 }`;
 
@@ -123,7 +125,7 @@ Respond only with valid JSON:
       messages: [
         {
           role: "system",
-          content: "You are an expert speech coach and communication analyst. Provide detailed, actionable feedback in the exact JSON format requested. Be thorough but concise in your analysis. Always respond with valid JSON only."
+          content: "You are an expert speech coach and communication analyst. Provide detailed, actionable feedback in the exact JSON format requested. Be thorough but concise in your analysis. Always respond with valid JSON only. IMPORTANT: The improvedVersion field must be in the same language as the input transcript, while all other fields remain in English."
         },
         {
           role: "user",
