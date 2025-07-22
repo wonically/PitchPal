@@ -17,6 +17,18 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
   const [volumeLevel, setVolumeLevel] = useState<number>(0);
   
+  // Helper function to format the timer display (masks first 3 seconds with countdown)
+  const formatTimerDisplay = (seconds: number): string => {
+    if (seconds === 0 || seconds === 1) return "Ready...";
+    if (seconds === 2) return "Go!";
+    
+    // After 3 seconds, show actual recording time (starting from 0)
+    const adjustedSeconds = seconds - 3;
+    const mins = Math.floor(adjustedSeconds / 60);
+    const secs = adjustedSeconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -312,7 +324,7 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                 </button>
                 <div className="recording-timer">
                   <span className="recording-indicator">🔴</span>
-                  {formatDuration(recordingDuration)}
+                  {formatTimerDisplay(recordingDuration)}
                 </div>
                 <div className="volume-meter">
                   <div className="volume-label">🔊 Volume:</div>
@@ -335,7 +347,7 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
             
             {recordingState === 'recorded' && (
               <div className="recording-complete">
-                <p>Recording complete! Duration: {formatDuration(recordingDuration)}</p>
+                <p>Recording complete! Duration: {formatDuration(Math.max(0, recordingDuration - 3))}</p>
                 <div className="recording-actions">
                   <button
                     className="action-button secondary"
