@@ -1,9 +1,18 @@
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization of OpenAI client
+let openai: OpenAI | null = null;
+
+const getOpenAIClient = (): OpenAI => {
+  if (!openai) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.');
+    }
+    openai = new OpenAI({ apiKey });
+  }
+  return openai;
+};
 
 interface AudioFeatures {
   pitch?: number;
@@ -55,6 +64,9 @@ export async function analyzeWithGPT(
   features: AudioFeatures
 ): Promise<GPTAnalysisResult> {
   try {
+    // Get OpenAI client (lazy initialization)
+    const client = getOpenAIClient();
+    
     const prompt = `You are a speech and communication coach. Analyze this transcript and audio data to give structured feedback.
 
 TRANSCRIPT:
@@ -106,7 +118,7 @@ Respond only with valid JSON:
   "overallScore": <0–100>
 }`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: "gpt-4",
       messages: [
         {

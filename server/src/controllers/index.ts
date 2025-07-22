@@ -120,9 +120,21 @@ export const analyzeAudio = async (req: Request, res: Response) => {
       
       // Handle process completion
       pythonProcess.on('close', async (code) => {
+        // Helper function to clean up uploaded file
+        const cleanupFile = () => {
+          fs.unlink(savedPath, (unlinkError) => {
+            if (unlinkError) {
+              console.error(`Failed to delete uploaded file ${savedPath}:`, unlinkError);
+            } else {
+              console.log(`Successfully deleted uploaded file: ${savedPath}`);
+            }
+          });
+        };
+
         if (code !== 0) {
           console.error(`Python script failed with code ${code}`);
           console.error(`stderr: ${stderr}`);
+          cleanupFile(); // Clean up file on Python script failure
           return res.status(500).json({
             error: 'Analysis failed',
             message: 'Failed to analyze audio file',
@@ -135,6 +147,7 @@ export const analyzeAudio = async (req: Request, res: Response) => {
           const analysisResult = JSON.parse(stdout.trim());
           
           if (!analysisResult.success) {
+            cleanupFile(); // Clean up file on analysis failure
             return res.status(500).json({
               error: 'Audio analysis failed',
               message: 'Python analysis script returned an error',
@@ -148,10 +161,28 @@ export const analyzeAudio = async (req: Request, res: Response) => {
           const transcript = analysisResult.transcript || '';
           const features = analysisResult.features || {};
           
-          // Run GPT analysis on transcript and features
-          console.log('Starting GPT analysis...');
-          const gptAnalysis = await analyzeWithGPT(transcript, features);
-          console.log('GPT analysis completed successfully');
+          let gptAnalysis;
+          try {
+            // Run GPT analysis on transcript and features
+            console.log('Starting GPT analysis...');
+            gptAnalysis = await analyzeWithGPT(transcript, features);
+            console.log('GPT analysis completed successfully');
+          } catch (gptError) {
+            console.error('GPT analysis failed:', gptError);
+            // Continue with audio analysis results even if GPT fails
+            gptAnalysis = {
+              tone: { score: 0, description: "GPT analysis unavailable" },
+              confidence: { level: "Medium", evidence: ["GPT analysis failed"] },
+              clarity: { score: 0, issues: ["GPT analysis unavailable"] },
+              fillerWords: { count: 0, examples: [] },
+              jargon: { count: 0, examples: [] },
+              improvedVersion: transcript,
+              overallScore: 0
+            };
+          }
+          
+          // Clean up the uploaded file after successful analysis
+          cleanupFile();
           
           // Return combined results
           res.json({
@@ -182,6 +213,7 @@ export const analyzeAudio = async (req: Request, res: Response) => {
         } catch (parseError) {
           console.error('Failed to parse Python script output:', parseError);
           console.error('stdout:', stdout);
+          cleanupFile(); // Clean up file on parsing error
           return res.status(500).json({
             error: 'Analysis parsing failed',
             message: 'Failed to parse analysis results',
@@ -193,6 +225,14 @@ export const analyzeAudio = async (req: Request, res: Response) => {
       // Handle process errors
       pythonProcess.on('error', (error) => {
         console.error('Failed to start Python process:', error);
+        // Clean up file on process error
+        fs.unlink(savedPath, (unlinkError) => {
+          if (unlinkError) {
+            console.error(`Failed to delete uploaded file ${savedPath}:`, unlinkError);
+          } else {
+            console.log(`Successfully deleted uploaded file: ${savedPath}`);
+          }
+        });
         return res.status(500).json({
           error: 'Analysis process failed',
           message: 'Failed to start audio analysis',
