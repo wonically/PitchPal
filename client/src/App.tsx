@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Container,
@@ -21,14 +21,16 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Snackbar
+  Snackbar,
+  Divider
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Mic as MicIcon,
   Send as SendIcon,
   Psychology as PsychologyIcon,
-  ExpandMore as ExpandMoreIcon
+  ExpandMore as ExpandMoreIcon,
+  History as HistoryIcon
 } from '@mui/icons-material';
 import './App.css';
 import AudioInput from './components/AudioInput';
@@ -66,6 +68,15 @@ interface PitchAnalysis {
   overallScore: number;
 }
 
+interface StoredAnalysis {
+  id: string;
+  pitchText: string;
+  analysis: PitchAnalysis;
+  inputType: 'text' | 'audio';
+  timestamp: string;
+  displayDate: string;
+}
+
 interface AnalysisResponse {
   success: boolean;
   data: {
@@ -83,11 +94,57 @@ function App() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [inputType, setInputType] = useState<'text' | 'audio'>('text');
+  const [currentTab, setCurrentTab] = useState<number>(0);
+  const [pitchHistory, setPitchHistory] = useState<StoredAnalysis[]>([]);
   
   // Toast state
   const [toastOpen, setToastOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [toastSeverity, setToastSeverity] = useState<'success' | 'error'>('success');
+
+  // Load pitch history from localStorage on component mount
+  useEffect(() => {
+    const loadPitchHistory = () => {
+      try {
+        const stored = localStorage.getItem('pitchHistory');
+        if (stored) {
+          const history: StoredAnalysis[] = JSON.parse(stored);
+          setPitchHistory(history);
+        }
+      } catch (error) {
+        console.error('Error loading pitch history:', error);
+      }
+    };
+    
+    loadPitchHistory();
+  }, []);
+
+  // Save analysis to localStorage and update history
+  const saveAnalysisToHistory = (analysis: PitchAnalysis, pitchText: string, inputType: 'text' | 'audio') => {
+    const newAnalysis: StoredAnalysis = {
+      id: Date.now().toString(),
+      pitchText,
+      analysis,
+      inputType,
+      timestamp: new Date().toISOString(),
+      displayDate: new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    };
+
+    const updatedHistory = [newAnalysis, ...pitchHistory].slice(0, 3); // Keep only latest 3
+    setPitchHistory(updatedHistory);
+    
+    try {
+      localStorage.setItem('pitchHistory', JSON.stringify(updatedHistory));
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+  };
 
   // Helper function to show toast
   const showToast = (message: string, severity: 'success' | 'error' = 'success') => {
@@ -122,6 +179,7 @@ function App() {
 
       if (response.data.success) {
         setAnalysis(response.data.data.analysis);
+        saveAnalysisToHistory(response.data.data.analysis, pitchText.trim(), 'text');
         showToast('Analysis complete!', 'success');
       } else {
         setError('Failed to analyze pitch');
@@ -213,6 +271,7 @@ function App() {
         };
         
         setAnalysis(transformedAnalysis);
+        saveAnalysisToHistory(transformedAnalysis, response.data.transcript || 'Audio analysis', 'audio');
         showToast('Audio analysis complete!', 'success');
       } else {
         setError('Failed to analyze audio');
@@ -268,8 +327,8 @@ function App() {
         
         <Card sx={{ mb: 4, backgroundColor: '#2a2a3e', boxShadow: 3 }}>
           <CardContent>
-            {/* Input Type Toggle */}
-            <Box display="flex" justifyContent="center" mb={3}>
+            {/* Input Type Toggle with History Button */}
+            <Box display="flex" justifyContent="center" alignItems="center" mb={3} gap={2}>
               <ToggleButtonGroup
                 value={inputType}
                 exclusive
@@ -299,6 +358,29 @@ function App() {
                   Audio Input
                 </ToggleButton>
               </ToggleButtonGroup>
+              
+              <Button
+                variant={currentTab === 1 ? "contained" : "outlined"}
+                onClick={() => setCurrentTab(currentTab === 1 ? 0 : 1)}
+                startIcon={<HistoryIcon />}
+                disabled={loading}
+                sx={{
+                  borderColor: '#61dafb',
+                  color: currentTab === 1 ? '#1e1e2e' : '#61dafb',
+                  backgroundColor: currentTab === 1 ? '#61dafb' : 'transparent',
+                  fontWeight: 'bold',
+                  '&:hover': {
+                    backgroundColor: currentTab === 1 ? '#4fc3f7' : 'rgba(97, 218, 251, 0.1)',
+                    borderColor: '#4fc3f7',
+                  },
+                  '&:disabled': {
+                    borderColor: '#555',
+                    color: '#999',
+                  },
+                }}
+              >
+                History {pitchHistory.length > 0 ? `(${pitchHistory.length})` : ''}
+              </Button>
             </Box>
 
             {/* Text Input Section */}
@@ -381,7 +463,6 @@ function App() {
             )}
           </CardContent>
         </Card>
-        
         {/* Loading Overlay */}
         {loading && (
           <Box
@@ -863,6 +944,366 @@ function App() {
               </Box>
             </CardContent>
           </Card>
+        )}
+
+        {/* Pitch History Section - shows below analysis results */}
+        {currentTab === 1 && (
+          <Box mt={4}>
+            {pitchHistory.length === 0 ? (
+              <Card sx={{ backgroundColor: '#2a2a3e', boxShadow: 3 }}>
+                <CardContent>
+                  <Box textAlign="center" py={6}>
+                    <HistoryIcon sx={{ fontSize: 64, color: '#61dafb', mb: 2 }} />
+                    <Typography variant="h5" sx={{ color: '#61dafb', mb: 2 }}>
+                      No Analysis History
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: '#b0bec5', mb: 3 }}>
+                      Your recent pitch analyses will appear here. Start by analyzing your first pitch!
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      onClick={() => setCurrentTab(0)}
+                      sx={{
+                        backgroundColor: '#61dafb',
+                        color: '#1e1e2e',
+                        fontWeight: 'bold',
+                        '&:hover': { backgroundColor: '#4fc3f7' }
+                      }}
+                    >
+                      Analyze New Pitch
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            ) : (
+              <Box>
+                <Typography variant="h5" sx={{ color: '#61dafb', mb: 3, textAlign: 'center' }}>
+                  📈 Recent Analysis History
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#b0bec5', mb: 3, textAlign: 'center' }}>
+                  Your last {pitchHistory.length} pitch analyses (showing most recent first)
+                </Typography>
+                
+                {pitchHistory.map((storedAnalysis, index) => (
+                  <Card key={storedAnalysis.id} sx={{ backgroundColor: '#2a2a3e', boxShadow: 3, mb: 3 }}>
+                    <CardContent>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Box>
+                          <Typography variant="h6" sx={{ color: '#61dafb' }}>
+                            Analysis #{pitchHistory.length - index}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#b0bec5' }}>
+                            {storedAnalysis.displayDate} • {storedAnalysis.inputType === 'audio' ? '🎤 Audio' : '📝 Text'} Input
+                          </Typography>
+                        </Box>
+                        <Chip 
+                          label={`Score: ${storedAnalysis.analysis.overallScore}/100`}
+                          sx={{ 
+                            backgroundColor: getScoreColor(storedAnalysis.analysis.overallScore / 10),
+                            color: 'white',
+                            fontWeight: 'bold'
+                          }}
+                        />
+                      </Box>
+                      
+                      <Divider sx={{ backgroundColor: '#61dafb', mb: 2 }} />
+                      
+                      {/* Original Pitch Text Preview */}
+                      <Box mb={2}>
+                        <Typography variant="subtitle2" sx={{ color: '#61dafb', mb: 1 }}>
+                          Original Pitch:
+                        </Typography>
+                        <Paper 
+                          sx={{ 
+                            p: 2, 
+                            backgroundColor: '#1e1e2e',
+                            border: '1px solid #3a3a4e'
+                          }}
+                        >
+                          <Typography variant="body2" sx={{ color: '#e0e0e0' }}>
+                            {storedAnalysis.pitchText.length > 200 
+                              ? `${storedAnalysis.pitchText.substring(0, 200)}...` 
+                              : storedAnalysis.pitchText}
+                          </Typography>
+                        </Paper>
+                      </Box>
+
+                      {/* Analysis Results as Accordions */}
+                      <Box sx={{ mt: 2 }}>
+                        {/* Tone Analysis Accordion */}
+                        <Accordion 
+                          sx={{ 
+                            backgroundColor: '#1e1e2e', 
+                            color: 'white',
+                            mb: 1,
+                            '&:before': { display: 'none' }
+                          }}
+                        >
+                          <AccordionSummary 
+                            expandIcon={<ExpandMoreIcon sx={{ color: '#61dafb' }} />}
+                            sx={{ 
+                              backgroundColor: '#2a2a3e',
+                              '&:hover': { backgroundColor: '#3a3a4e' }
+                            }}
+                          >
+                            <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
+                              <Typography variant="h6" sx={{ color: '#61dafb' }}>
+                                🎯 Tone Analysis
+                              </Typography>
+                              <Chip 
+                                label={`${storedAnalysis.analysis.tone.score}/100`}
+                                size="small"
+                                sx={{ 
+                                  backgroundColor: getScoreColor(storedAnalysis.analysis.tone.score / 10),
+                                  color: 'white',
+                                  fontWeight: 'bold',
+                                  mr: 2
+                                }}
+                              />
+                            </Box>
+                          </AccordionSummary>
+                          <AccordionDetails sx={{ backgroundColor: '#1e1e2e' }}>
+                            <Typography variant="body2" sx={{ color: '#e0e0e0', mb: 2 }}>
+                              {storedAnalysis.analysis.tone.description}
+                            </Typography>
+                            {(storedAnalysis.analysis.tone.suggestions || []).length > 0 && (
+                              <Box>
+                                <Typography variant="subtitle2" sx={{ color: '#61dafb', mb: 1 }}>
+                                  💡 Suggestions:
+                                </Typography>
+                                <List dense>
+                                  {(storedAnalysis.analysis.tone.suggestions || []).map((suggestion, idx) => (
+                                    <ListItem key={idx} sx={{ py: 0.5, pl: 0 }}>
+                                      <ListItemText 
+                                        primary={`• ${suggestion}`}
+                                        primaryTypographyProps={{
+                                          variant: 'body2',
+                                          sx: { color: '#e0e0e0' }
+                                        }}
+                                      />
+                                    </ListItem>
+                                  ))}
+                                </List>
+                              </Box>
+                            )}
+                          </AccordionDetails>
+                        </Accordion>
+
+                        {/* Clarity Analysis Accordion */}
+                        <Accordion 
+                          sx={{ 
+                            backgroundColor: '#1e1e2e', 
+                            color: 'white',
+                            mb: 1,
+                            '&:before': { display: 'none' }
+                          }}
+                        >
+                          <AccordionSummary 
+                            expandIcon={<ExpandMoreIcon sx={{ color: '#61dafb' }} />}
+                            sx={{ 
+                              backgroundColor: '#2a2a3e',
+                              '&:hover': { backgroundColor: '#3a3a4e' }
+                            }}
+                          >
+                            <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
+                              <Typography variant="h6" sx={{ color: '#61dafb' }}>
+                                🔍 Clarity Analysis
+                              </Typography>
+                              <Chip 
+                                label={`${storedAnalysis.analysis.clarity.score}/100`}
+                                size="small"
+                                sx={{ 
+                                  backgroundColor: getScoreColor(storedAnalysis.analysis.clarity.score / 10),
+                                  color: 'white',
+                                  fontWeight: 'bold',
+                                  mr: 2
+                                }}
+                              />
+                            </Box>
+                          </AccordionSummary>
+                          <AccordionDetails sx={{ backgroundColor: '#1e1e2e' }}>
+                            <Typography variant="body2" sx={{ color: '#e0e0e0', mb: 2 }}>
+                              {storedAnalysis.analysis.clarity.description}
+                            </Typography>
+                            {(storedAnalysis.analysis.clarity.suggestions || []).length > 0 && (
+                              <Box>
+                                <Typography variant="subtitle2" sx={{ color: '#61dafb', mb: 1 }}>
+                                  💡 Suggestions:
+                                </Typography>
+                                <List dense>
+                                  {(storedAnalysis.analysis.clarity.suggestions || []).map((suggestion, idx) => (
+                                    <ListItem key={idx} sx={{ py: 0.5, pl: 0 }}>
+                                      <ListItemText 
+                                        primary={`• ${suggestion}`}
+                                        primaryTypographyProps={{
+                                          variant: 'body2',
+                                          sx: { color: '#e0e0e0' }
+                                        }}
+                                      />
+                                    </ListItem>
+                                  ))}
+                                </List>
+                              </Box>
+                            )}
+                          </AccordionDetails>
+                        </Accordion>
+
+                        {/* Additional analysis sections for audio inputs */}
+                        {storedAnalysis.analysis.confidence && (
+                          <Accordion 
+                            sx={{ 
+                              backgroundColor: '#1e1e2e', 
+                              color: 'white',
+                              mb: 1,
+                              '&:before': { display: 'none' }
+                            }}
+                          >
+                            <AccordionSummary 
+                              expandIcon={<ExpandMoreIcon sx={{ color: '#61dafb' }} />}
+                              sx={{ 
+                                backgroundColor: '#2a2a3e',
+                                '&:hover': { backgroundColor: '#3a3a4e' }
+                              }}
+                            >
+                              <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
+                                <Typography variant="h6" sx={{ color: '#61dafb' }}>
+                                  💪 Confidence Analysis
+                                </Typography>
+                                <Chip 
+                                  label={storedAnalysis.analysis.confidence.level.toUpperCase()}
+                                  size="small"
+                                  sx={{ 
+                                    backgroundColor: getSeverityColor(storedAnalysis.analysis.confidence.level.toLowerCase()),
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    mr: 2
+                                  }}
+                                />
+                              </Box>
+                            </AccordionSummary>
+                            <AccordionDetails sx={{ backgroundColor: '#1e1e2e' }}>
+                              <Typography variant="subtitle2" sx={{ color: '#61dafb', mb: 1 }}>
+                                🔍 Evidence:
+                              </Typography>
+                              <List dense>
+                                {storedAnalysis.analysis.confidence.evidence.map((evidence, idx) => (
+                                  <ListItem key={idx} sx={{ py: 0.5, pl: 0 }}>
+                                    <ListItemText 
+                                      primary={`• ${evidence}`}
+                                      primaryTypographyProps={{
+                                        variant: 'body2',
+                                        sx: { color: '#e0e0e0' }
+                                      }}
+                                    />
+                                  </ListItem>
+                                ))}
+                              </List>
+                            </AccordionDetails>
+                          </Accordion>
+                        )}
+
+                        {/* Jargon Analysis */}
+                        {(storedAnalysis.analysis.jargon || storedAnalysis.analysis.jargonCount) && (
+                          <Accordion 
+                            sx={{ 
+                              backgroundColor: '#1e1e2e', 
+                              color: 'white',
+                              mb: 1,
+                              '&:before': { display: 'none' }
+                            }}
+                          >
+                            <AccordionSummary 
+                              expandIcon={<ExpandMoreIcon sx={{ color: '#61dafb' }} />}
+                              sx={{ 
+                                backgroundColor: '#2a2a3e',
+                                '&:hover': { backgroundColor: '#3a3a4e' }
+                              }}
+                            >
+                              <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
+                                <Typography variant="h6" sx={{ color: '#61dafb' }}>
+                                  🔤 Jargon Analysis
+                                </Typography>
+                                <Chip 
+                                  label={`${(storedAnalysis.analysis.jargon?.count || storedAnalysis.analysis.jargonCount?.count || 0)} terms`}
+                                  size="small"
+                                  sx={{ 
+                                    backgroundColor: getSeverityColor(storedAnalysis.analysis.jargonCount?.severity || 'low'),
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    mr: 2
+                                  }}
+                                />
+                              </Box>
+                            </AccordionSummary>
+                            <AccordionDetails sx={{ backgroundColor: '#1e1e2e' }}>
+                              {(storedAnalysis.analysis.jargon?.examples || storedAnalysis.analysis.jargonCount?.examples || []).length > 0 && (
+                                <Box>
+                                  <Typography variant="subtitle2" sx={{ color: '#61dafb', mb: 1 }}>
+                                    📝 Found Terms:
+                                  </Typography>
+                                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                    {(storedAnalysis.analysis.jargon?.examples || storedAnalysis.analysis.jargonCount?.examples || []).map((term, idx) => (
+                                      <Chip 
+                                        key={idx}
+                                        label={term}
+                                        size="small"
+                                        sx={{ 
+                                          backgroundColor: '#3a3a4e',
+                                          color: '#e0e0e0',
+                                          mb: 1
+                                        }}
+                                      />
+                                    ))}
+                                  </Stack>
+                                </Box>
+                              )}
+                            </AccordionDetails>
+                          </Accordion>
+                        )}
+
+                        {/* Improved Version */}
+                        <Accordion 
+                          sx={{ 
+                            backgroundColor: '#1e1e2e', 
+                            color: 'white',
+                            '&:before': { display: 'none' }
+                          }}
+                        >
+                          <AccordionSummary 
+                            expandIcon={<ExpandMoreIcon sx={{ color: '#61dafb' }} />}
+                            sx={{ 
+                              backgroundColor: '#2a2a3e',
+                              '&:hover': { backgroundColor: '#3a3a4e' }
+                            }}
+                          >
+                            <Typography variant="h6" sx={{ color: '#61dafb' }}>
+                              ✨ Improved Version
+                            </Typography>
+                          </AccordionSummary>
+                          <AccordionDetails sx={{ backgroundColor: '#1e1e2e' }}>
+                            <Paper 
+                              sx={{ 
+                                p: 3, 
+                                backgroundColor: '#2a2a3e',
+                                borderLeft: '4px solid #61dafb'
+                              }}
+                            >
+                              <Typography variant="body1" sx={{ color: '#e0e0e0', lineHeight: 1.6 }}>
+                                {storedAnalysis.analysis.improvedVersion}
+                              </Typography>
+                            </Paper>
+                            <Typography variant="body2" sx={{ color: '#b0bec5', mt: 2, fontStyle: 'italic' }}>
+                              💡 This version incorporates the suggestions above for a more polished delivery.
+                            </Typography>
+                          </AccordionDetails>
+                        </Accordion>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            )}
+          </Box>
         )}
 
         {/* Toast Notification */}
