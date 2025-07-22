@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { spawn } from 'child_process';
 import { analyzePitchWithOpenAI, getMockPitchAnalysis, validateOpenAIKey } from '../utils/openai';
+import { analyzeWithGPT } from '../utils/gptAnalysis';
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../../uploads');
@@ -118,7 +119,7 @@ export const analyzeAudio = async (req: Request, res: Response) => {
       });
       
       // Handle process completion
-      pythonProcess.on('close', (code) => {
+      pythonProcess.on('close', async (code) => {
         if (code !== 0) {
           console.error(`Python script failed with code ${code}`);
           console.error(`stderr: ${stderr}`);
@@ -133,9 +134,26 @@ export const analyzeAudio = async (req: Request, res: Response) => {
           // Parse the JSON output from Python script
           const analysisResult = JSON.parse(stdout.trim());
           
+          if (!analysisResult.success) {
+            return res.status(500).json({
+              error: 'Audio analysis failed',
+              message: 'Python analysis script returned an error',
+              details: analysisResult.error || 'Unknown analysis error'
+            });
+          }
+          
           console.log('Python analysis completed successfully');
           
-          // Return the analysis result along with file info
+          // Extract transcript and features for GPT analysis
+          const transcript = analysisResult.transcript || '';
+          const features = analysisResult.features || {};
+          
+          // Run GPT analysis on transcript and features
+          console.log('Starting GPT analysis...');
+          const gptAnalysis = await analyzeWithGPT(transcript, features);
+          console.log('GPT analysis completed successfully');
+          
+          // Return combined results
           res.json({
             success: true,
             fileInfo: {
@@ -145,7 +163,20 @@ export const analyzeAudio = async (req: Request, res: Response) => {
               size: fileSize,
               mimeType: req.file?.mimetype
             },
-            analysis: analysisResult
+            audioAnalysis: {
+              transcript: analysisResult.transcript,
+              features: analysisResult.features,
+              analysis: analysisResult.analysis,
+              transcript_details: analysisResult.transcript_details,
+              metadata: analysisResult.metadata
+            },
+            gptAnalysis: gptAnalysis,
+            overallResults: {
+              audioScore: analysisResult.analysis?.overall_score || 0,
+              gptScore: gptAnalysis.overallScore || 0,
+              combinedScore: Math.round(((analysisResult.analysis?.overall_score || 0) + (gptAnalysis.overallScore || 0)) / 2),
+              processingTimestamp: new Date().toISOString()
+            }
           });
           
         } catch (parseError) {
