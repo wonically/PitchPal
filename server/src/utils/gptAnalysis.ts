@@ -95,27 +95,27 @@ ANALYZE:
 Respond only with valid JSON:
 {
   "tone": {
-    "score": <0–100>,
-    "description": "<tone summary>"
+    "score": 0–100,
+    "description": "..."
   },
   "confidence": {
-    "level": "<Low/Medium/High>",
-    "evidence": ["<example 1>", "<example 2>"]
+    "level": "low/medium/high",
+    "evidence": ["...", "..."]
   },
   "clarity": {
-    "score": <0–100>,
-    "issues": ["<issue 1>", "<issue 2>"]
+    "score": 0–100,
+    "issues": ["...", "..."]
   },
   "fillerWords": {
-    "count": <number>,
-    "examples": ["<example 1>", "<example 2>"]
+    "count": number,
+    "examples": ["...", "..."]
   },
   "jargon": {
-    "count": <number>,
-    "examples": ["<term 1>", "<term 2>"]
+    "count": number,
+    "examples": ["...", "..."]
   },
-  "improvedVersion": "<rewritten transcript>",
-  "overallScore": <0–100>
+  "improvedVersion": "...", (same language as transcript)
+  "overallScore": 0–100
 }`;
 
     const completion = await client.chat.completions.create({

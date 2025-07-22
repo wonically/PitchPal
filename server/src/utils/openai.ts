@@ -17,12 +17,12 @@ function getOpenAIClient(): OpenAI {
 
 export interface PitchAnalysis {
   tone: {
-    score: number; // 1-10 scale
+    score: number;
     description: string;
     suggestions: string[];
   };
   clarity: {
-    score: number; // 1-10 scale
+    score: number;
     description: string;
     suggestions: string[];
   };
@@ -32,7 +32,7 @@ export interface PitchAnalysis {
     severity: 'low' | 'medium' | 'high';
   };
   improvedVersion: string;
-  overallScore: number; // 1-100 scale
+  overallScore: number;
 }
 
 export async function analyzePitchWithOpenAI(pitchText: string): Promise<PitchAnalysis> {
@@ -48,12 +48,12 @@ Pitch:
 Use this structure:
 {
   "tone": {
-    "score": 1-10,
+    "score": 0-100,
     "description": "...",
     "suggestions": ["...", "..."]
   },
   "clarity": {
-    "score": 1-10,
+    "score": 0-100,
     "description": "...",
     "suggestions": ["...", "..."]
   },
@@ -62,8 +62,8 @@ Use this structure:
     "examples": ["...", "..."],
     "severity": "low/medium/high"
   },
-  "improvedVersion": "...",
-  "overallScore": 1-100
+  "improvedVersion": "...", (same language as pitch)
+  "overallScore": 0-100
 }
 
 Criteria:
