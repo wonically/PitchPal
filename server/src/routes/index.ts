@@ -1,5 +1,5 @@
 import express from 'express';
-import { getHealth, getApiInfo, analyzePitch } from '../controllers';
+import { getHealth, getApiInfo, analyzePitch, analyzeAudio, uploadAudio } from '../controllers';
 
 const router = express.Router();
 
@@ -9,11 +9,11 @@ router.get('/health', getHealth);
 // API info route
 router.get('/info', getApiInfo);
 
-// Root pitch analysis route
+// Root pitch analysis route (text-based)
 router.post('/', analyzePitch);
 
-// Pitch analysis route (alternative endpoint)
-router.post('/analyze', analyzePitch);
+// Audio file upload and analysis route
+router.post('/analyze', uploadAudio, analyzeAudio);
 
 // Test OpenAI connection
 router.get('/test-openai', async (req, res) => {
