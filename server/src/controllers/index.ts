@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { spawn } from 'child_process';
 import { analyzePitchWithOpenAI, getMockPitchAnalysis, validateOpenAIKey } from '../utils/openai';
 
 // Ensure uploads directory exists
@@ -86,15 +87,96 @@ export const analyzeAudio = async (req: Request, res: Response) => {
 
     console.log(`Audio file uploaded: ${originalName} (${fileName}) - ${fileSize} bytes`);
 
-    // For now, just return success with file information
-    res.json({
-      success: true,
-      path: savedPath,
-      filename: fileName,
-      originalName: originalName,
-      size: fileSize,
-      mimeType: req.file.mimetype
-    });
+    // Run Python script to analyze the audio
+    try {
+      const pythonScriptPath = path.join(__dirname, '../../analyze_audio.py');
+      
+      // Check if Python script exists
+      if (!fs.existsSync(pythonScriptPath)) {
+        return res.status(500).json({
+          error: 'Analysis script not found',
+          message: 'Audio analysis script is not available'
+        });
+      }
+
+      console.log(`Running Python analysis on: ${savedPath}`);
+      
+      // Spawn Python process
+      const pythonProcess = spawn('python3', [pythonScriptPath, savedPath]);
+      
+      let stdout = '';
+      let stderr = '';
+      
+      // Capture stdout
+      pythonProcess.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+      
+      // Capture stderr
+      pythonProcess.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+      
+      // Handle process completion
+      pythonProcess.on('close', (code) => {
+        if (code !== 0) {
+          console.error(`Python script failed with code ${code}`);
+          console.error(`stderr: ${stderr}`);
+          return res.status(500).json({
+            error: 'Analysis failed',
+            message: 'Failed to analyze audio file',
+            details: stderr || 'Python script execution failed'
+          });
+        }
+        
+        try {
+          // Parse the JSON output from Python script
+          const analysisResult = JSON.parse(stdout.trim());
+          
+          console.log('Python analysis completed successfully');
+          
+          // Return the analysis result along with file info
+          res.json({
+            success: true,
+            fileInfo: {
+              path: savedPath,
+              filename: fileName,
+              originalName: originalName,
+              size: fileSize,
+              mimeType: req.file?.mimetype
+            },
+            analysis: analysisResult
+          });
+          
+        } catch (parseError) {
+          console.error('Failed to parse Python script output:', parseError);
+          console.error('stdout:', stdout);
+          return res.status(500).json({
+            error: 'Analysis parsing failed',
+            message: 'Failed to parse analysis results',
+            details: 'Invalid JSON output from analysis script'
+          });
+        }
+      });
+      
+      // Handle process errors
+      pythonProcess.on('error', (error) => {
+        console.error('Failed to start Python process:', error);
+        return res.status(500).json({
+          error: 'Analysis process failed',
+          message: 'Failed to start audio analysis',
+          details: error.message
+        });
+      });
+      
+    } catch (scriptError: any) {
+      console.error('Error running Python script:', scriptError);
+      return res.status(500).json({
+        error: 'Script execution failed',
+        message: 'Failed to execute audio analysis script',
+        details: scriptError.message
+      });
+    }
 
   } catch (error: any) {
     console.error('Error processing audio upload:', error);
