@@ -13,6 +13,48 @@
   font-size: calc(10px + 2vmin);
 }
 
+/* Input Type Toggle */
+.input-type-toggle {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+/* When input toggle is inside pitch box, reduce top margin */
+.pitch-input-section .input-type-toggle {
+  margin-top: 0;
+  margin-bottom: 25px;
+}
+
+.input-type-button {
+  padding: 12px 24px;
+  border: 2px solid #61dafb;
+  border-radius: 8px;
+  background-color: transparent;
+  color: #61dafb;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+  max-width: 180px;
+}
+
+.input-type-button:hover:not(:disabled) {
+  background-color: rgba(97, 218, 251, 0.1);
+}
+
+.input-type-button.active {
+  background-color: #61dafb;
+  color: #282c34;
+}
+
+.input-type-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .pitch-input-section {
   background-color: #3a3f47;
   padding: 30px;
@@ -221,7 +263,28 @@ h1 {
 
 h3 {
   color: #61dafb;
-  font-size: 24px;
+  margin-bottom: 15px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .input-type-toggle {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .input-type-button {
+    max-width: none;
+  }
+  
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pitch-input-section {
+    padding: 20px;
+    margin: 15px 0;
+  }
 }
 
 h4 {

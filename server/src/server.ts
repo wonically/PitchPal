@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import apiRoutes from './routes';
+import { uploadAudio, analyzeAudio } from './controllers';
 
 // Load environment variables
 dotenv.config();
@@ -36,8 +37,11 @@ app.get('/health', (req: Request, res: Response) => {
 // API routes
 app.use('/api', apiRoutes);
 
+// Direct analyze route for audio file uploads
+app.post('/analyze', uploadAudio, analyzeAudio);
+
 // Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: any) => {
+app.use((err: Error, req: Request, res: Response, next: express.NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ 
     message: 'Something went wrong!',
