@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { AudioBasedAnalysis, createDefaultAudioBasedAnalysis } from './analysisTypes';
 
 // Lazy initialization of OpenAI client
 let openai: OpenAI | null = null;
@@ -28,44 +29,7 @@ interface AudioFeatures {
   voice_quality_score?: number;
 }
 
-interface AudioBasedAnalysisResult {
-  tone: {
-    score: number;
-    description: string;
-  };
-  confidence: {
-    level: string;
-    evidence: string[];
-  };
-  clarity: {
-    score: number;
-    issues: string[];
-  };
-  fillerWords: {
-    count: number;
-    examples: string[];
-  };
-  jargon: {
-    count: number;
-    examples: string[];
-  };
-  structure: {
-    score: number;
-    issues: string[];
-  };
-  persuasion: {
-    score: number;
-    techniques: string[];
-    weaknesses: string[];
-  };
-  engagement: {
-    score: number;
-    vocal_variety: string;
-    energy_level: string;
-  };
-  improvedVersion: string;
-  overallScore: number;
-}
+
 
 /**
  * Analyze transcript and audio features using GPT-4
@@ -76,7 +40,7 @@ interface AudioBasedAnalysisResult {
 export async function analyzeWithAudioBasedAnalysis(
   transcript: string,
   features: AudioFeatures
-): Promise<AudioBasedAnalysisResult> {
+): Promise<AudioBasedAnalysis> {
   try {
     // Get OpenAI client (lazy initialization)
     const client = getOpenAIClient();
@@ -98,58 +62,43 @@ AUDIO FEATURES:
 - Energy: ${features.energy_mean || 0}
 - Voice score: ${features.voice_quality_score || 0}/100
 
-ANALYZE:
-1. TONE — Style and emotional tone  
-2. CONFIDENCE — Based on voice and content  
-3. CLARITY — From both audio and wording  
-4. FILLERS — Count and list filler words  
-5. JARGON — List technical or complex terms  
-6. STRUCTURE — Pitch flow and organization
-7. PERSUASION — Convincing techniques and power
-8. ENGAGEMENT — Vocal variety and energy
-9. IMPROVE — Rewrite for better flow and clarity IN THE SAME LANGUAGE as the input transcript
+Use this structure:
+{
+  "tone": { "score": 0-100, "description": "...", "suggestions": ["...", "..."] },
+  "confidence": { "level": "low/medium/high", "evidence": ["...", "..."] },
+  "clarity": { "score": 0-100, "description": "...", "suggestions": ["...", "..."] },
+  "fillerWords": { "count": 0, "examples": ["...", "..."] },
+  "jargon": { "count": 0, "examples": ["...", "..."], "severity": "low/medium/high" },
+  "structure": { "score": 0-100, "description": "...", "suggestions": ["...", "..."] },
+  "persuasiveness": { "score": 0-100, "description": "...", "suggestions": ["...", "..."], "callToAction": { "present": true/false, "strength": "weak/strong", "feedback": "..." } },
+  "engagement": { "score": 0-100, "vocal_variety": "low/medium/high", "energy_level": "low/medium/high" },
+  "credibility": { "score": 0-100, "evidence": ["...", "..."], "weaknesses": ["...", "..."] },
+  "audienceFit": { "score": 0-100, "description": "...", "issues": ["...", "..."], "suggestions": ["...", "..."] },
+  "originality": { "score": 0-100, "description": "...", "comparisons": ["...", "..."], "suggestions": ["...", "..."] },
+  "emotionalImpact": { "score": 0-100, "triggers": ["...", "..."], "notes": "..." },
+  "improvedVersion": "...",
+  "overallScore": 0-100
+}
+
+Criteria:
+- Tone: confidence, enthusiasm, professionalism
+- Confidence: assertiveness, certainty in statements, conviction
+- Clarity: ease of understanding, clear messaging
+- FillerWords: count and identify filler words/phrases (um, uh, like, you know, etc.)
+- Jargon: complexity, buzzwords, technical terms that may confuse audience
+- Structure: logical flow (problem → solution → market → ask)
+- Persuasiveness: compelling arguments, credibility, call-to-action strength
+- Engagement: how captivating and dynamic the pitch is (consider vocal variety and energy from audio)
+- Credibility: trustworthiness, evidence provided, expertise demonstrated
+- AudienceFit: how well tailored to target audience
+- Originality: uniqueness, differentiation from competitors
+- EmotionalImpact: emotional resonance, storytelling, connection
+- ImprovedVersion: rewrite for clarity + impact IN THE SAME LANGUAGE as the input transcript
+- OverallScore: holistic assessment
 
 IMPORTANT: Detect the language of the input transcript and provide the "improvedVersion" in that same language. All other analysis should remain in English.
 
-Respond only with valid JSON:
-{
-  "tone": {
-    "score": 0–100,
-    "description": "..."
-  },
-  "confidence": {
-    "level": "low/medium/high",
-    "evidence": ["...", "..."]
-  },
-  "clarity": {
-    "score": 0–100,
-    "issues": ["...", "..."]
-  },
-  "fillerWords": {
-    "count": number,
-    "examples": ["...", "..."]
-  },
-  "jargon": {
-    "count": number,
-    "examples": ["...", "..."]
-  },
-  "structure": {
-    "score": 0–100,
-    "issues": ["...", "..."]
-  },
-  "persuasion": {
-    "score": 0–100,
-    "techniques": ["...", "..."],
-    "weaknesses": ["...", "..."]
-  },
-  "engagement": {
-    "score": 0–100,
-    "vocal_variety": "low/medium/high",
-    "energy_level": "low/medium/high"
-  },
-  "improvedVersion": "...",
-  "overallScore": 0–100
-}`;
+Respond with JSON only. No extra text.`;
 
     const completion = await client.chat.completions.create({
       model: "gpt-4",
@@ -180,92 +129,26 @@ Respond only with valid JSON:
       jsonString = jsonMatch[0];
     }
 
+
     // Parse the JSON response
-    const analysis: AudioBasedAnalysisResult = JSON.parse(jsonString);
+    let analysis: AudioBasedAnalysis;
+    try {
+      analysis = JSON.parse(jsonString);
+    } catch (e) {
+      return createDefaultAudioBasedAnalysis(transcript, 'Failed to parse OpenAI response. Please try again.');
+    }
 
-    // Validate required fields and provide defaults if missing
-    const validatedAnalysis: AudioBasedAnalysisResult = {
-      tone: {
-        score: analysis.tone?.score || 0,
-        description: analysis.tone?.description || "Analysis unavailable"
-      },
-      confidence: {
-        level: analysis.confidence?.level || "Medium",
-        evidence: analysis.confidence?.evidence || []
-      },
-      clarity: {
-        score: analysis.clarity?.score || 0,
-        issues: analysis.clarity?.issues || []
-      },
-      fillerWords: {
-        count: analysis.fillerWords?.count || 0,
-        examples: analysis.fillerWords?.examples || []
-      },
-      jargon: {
-        count: analysis.jargon?.count || 0,
-        examples: analysis.jargon?.examples || []
-      },
-      structure: {
-        score: analysis.structure?.score || 0,
-        issues: analysis.structure?.issues || []
-      },
-      persuasion: {
-        score: analysis.persuasion?.score || 0,
-        techniques: analysis.persuasion?.techniques || [],
-        weaknesses: analysis.persuasion?.weaknesses || []
-      },
-      engagement: {
-        score: analysis.engagement?.score || 0,
-        vocal_variety: analysis.engagement?.vocal_variety || "medium",
-        energy_level: analysis.engagement?.energy_level || "medium"
-      },
-      improvedVersion: analysis.improvedVersion || transcript,
-      overallScore: analysis.overallScore || 0
-    };
+    // Validate the response structure (basic check)
+    if (!analysis.tone || !analysis.confidence || !analysis.clarity || !analysis.fillerWords || !analysis.jargon || !analysis.structure || !analysis.persuasiveness || !analysis.engagement || !analysis.credibility || !analysis.audienceFit || !analysis.originality || !analysis.emotionalImpact || !analysis.improvedVersion) {
+      return createDefaultAudioBasedAnalysis(transcript, 'Invalid response structure from OpenAI');
+    }
 
-    return validatedAnalysis;
+    return analysis;
 
   } catch (error) {
     console.error('Audio-based Analysis error:', error);
     
     // Return default analysis structure on error
-    return {
-      tone: {
-        score: 0,
-        description: "Analysis failed - unable to assess tone"
-      },
-      confidence: {
-        level: "Medium",
-        evidence: ["Analysis error occurred"]
-      },
-      clarity: {
-        score: 0,
-        issues: ["Unable to analyze clarity due to processing error"]
-      },
-      fillerWords: {
-        count: 0,
-        examples: []
-      },
-      jargon: {
-        count: 0,
-        examples: []
-      },
-      structure: {
-        score: 0,
-        issues: ["Unable to analyze structure due to processing error"]
-      },
-      persuasion: {
-        score: 0,
-        techniques: [],
-        weaknesses: ["Unable to analyze persuasion due to processing error"]
-      },
-      engagement: {
-        score: 0,
-        vocal_variety: "medium",
-        energy_level: "medium"
-      },
-      improvedVersion: transcript,
-      overallScore: 0
-    };
+    return createDefaultAudioBasedAnalysis(transcript, 'Audio-based analysis failed');
   }
 }

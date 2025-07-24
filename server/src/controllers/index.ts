@@ -5,6 +5,7 @@ import fs from 'fs';
 import { spawn } from 'child_process';
 import { analyzePitchWithTextBasedAnalysis, validateOpenAIKey } from '../utils/textBasedAnalysis';
 import { analyzeWithAudioBasedAnalysis } from '../utils/audioBasedAnalysis';
+import { createDefaultAudioBasedAnalysis, createDefaultTextBasedAnalysis } from '../utils/analysisTypes';
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../../uploads');
@@ -75,6 +76,7 @@ export const analyzeAudio = async (req: Request, res: Response) => {
     // Check if file was uploaded
     if (!req.file) {
       return res.status(400).json({
+        success: false,
         error: 'No audio file provided',
         message: 'Please upload an audio file (.wav, .mp3, or .webm)'
       });
@@ -91,33 +93,35 @@ export const analyzeAudio = async (req: Request, res: Response) => {
     // Run Python script to analyze the audio
     try {
       const pythonScriptPath = path.join(__dirname, '../../analyze_audio.py');
-      
+
       // Check if Python script exists
       if (!fs.existsSync(pythonScriptPath)) {
         return res.status(500).json({
+          success: false,
           error: 'Analysis script not found',
-          message: 'Audio analysis script is not available'
+          message: 'Audio analysis script is not available',
+          fallback: createDefaultAudioBasedAnalysis('', 'Audio analysis script not found')
         });
       }
 
       console.log(`Running Python analysis on: ${savedPath}`);
-      
+
       // Spawn Python process
       const pythonProcess = spawn('python3', [pythonScriptPath, savedPath]);
-      
+
       let stdout = '';
       let stderr = '';
-      
+
       // Capture stdout
       pythonProcess.stdout.on('data', (data) => {
         stdout += data.toString();
       });
-      
+
       // Capture stderr
       pythonProcess.stderr.on('data', (data) => {
         stderr += data.toString();
       });
-      
+
       // Handle process completion
       pythonProcess.on('close', async (code) => {
         // Helper function to clean up uploaded file
@@ -136,31 +140,35 @@ export const analyzeAudio = async (req: Request, res: Response) => {
           console.error(`stderr: ${stderr}`);
           cleanupFile(); // Clean up file on Python script failure
           return res.status(500).json({
+            success: false,
             error: 'Analysis failed',
             message: 'Failed to analyze audio file',
-            details: stderr || 'Python script execution failed'
+            details: stderr || 'Python script execution failed',
+            fallback: createDefaultAudioBasedAnalysis('', 'Python script execution failed')
           });
         }
-        
+
         try {
           // Parse the JSON output from Python script
           const analysisResult = JSON.parse(stdout.trim());
-          
+
           if (!analysisResult.success) {
             cleanupFile(); // Clean up file on analysis failure
             return res.status(500).json({
+              success: false,
               error: 'Audio analysis failed',
               message: 'Python analysis script returned an error',
-              details: analysisResult.error || 'Unknown analysis error'
+              details: analysisResult.error || 'Unknown analysis error',
+              fallback: createDefaultAudioBasedAnalysis('', 'Python analysis script returned an error')
             });
           }
-          
+
           console.log('Python analysis completed successfully');
-          
+
           // Extract transcript and features for audio-based analysis
           const transcript = analysisResult.transcript || '';
           const features = analysisResult.features || {};
-          
+
           let audioBasedAnalysis;
           try {
             // Run audio-based analysis on transcript and features
@@ -169,21 +177,13 @@ export const analyzeAudio = async (req: Request, res: Response) => {
             console.log('Audio-based analysis completed successfully');
           } catch (gptError) {
             console.error('Audio-based analysis failed:', gptError);
-            // Continue with audio analysis results even if audio-based analysis fails
-            audioBasedAnalysis = {
-              tone: { score: 0, description: "Audio-based analysis unavailable" },
-              confidence: { level: "Medium", evidence: ["Audio-based analysis failed"] },
-              clarity: { score: 0, issues: ["Audio-based analysis unavailable"] },
-              fillerWords: { count: 0, examples: [] },
-              jargon: { count: 0, examples: [] },
-              improvedVersion: transcript,
-              overallScore: 0
-            };
+            // Use new helper for fallback
+            audioBasedAnalysis = createDefaultAudioBasedAnalysis(transcript, 'Audio-based analysis failed');
           }
-          
+
           // Clean up the uploaded file after successful analysis
           cleanupFile();
-          
+
           // Return combined results
           res.json({
             success: true,
@@ -209,19 +209,21 @@ export const analyzeAudio = async (req: Request, res: Response) => {
               processingTimestamp: new Date().toISOString()
             }
           });
-          
+
         } catch (parseError) {
           console.error('Failed to parse Python script output:', parseError);
           console.error('stdout:', stdout);
           cleanupFile(); // Clean up file on parsing error
           return res.status(500).json({
+            success: false,
             error: 'Analysis parsing failed',
             message: 'Failed to parse analysis results',
-            details: 'Invalid JSON output from analysis script'
+            details: 'Invalid JSON output from analysis script',
+            fallback: createDefaultAudioBasedAnalysis('', 'Invalid JSON output from analysis script')
           });
         }
       });
-      
+
       // Handle process errors
       pythonProcess.on('error', (error) => {
         console.error('Failed to start Python process:', error);
@@ -234,49 +236,61 @@ export const analyzeAudio = async (req: Request, res: Response) => {
           }
         });
         return res.status(500).json({
+          success: false,
           error: 'Analysis process failed',
           message: 'Failed to start audio analysis',
-          details: error.message
+          details: error.message,
+          fallback: createDefaultAudioBasedAnalysis('', 'Failed to start audio analysis')
         });
       });
-      
+
     } catch (scriptError: any) {
       console.error('Error running Python script:', scriptError);
       return res.status(500).json({
+        success: false,
         error: 'Script execution failed',
         message: 'Failed to execute audio analysis script',
-        details: scriptError.message
+        details: scriptError.message,
+        fallback: createDefaultAudioBasedAnalysis('', 'Failed to execute audio analysis script')
       });
     }
 
   } catch (error: any) {
     console.error('Error processing audio upload:', error);
-    
+
     // Handle multer errors
     if (error instanceof multer.MulterError) {
       if (error.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({
+          success: false,
           error: 'File too large',
-          message: 'Please upload a file smaller than 10MB'
+          message: 'Please upload a file smaller than 10MB',
+          fallback: createDefaultAudioBasedAnalysis('', 'File too large')
         });
       }
       return res.status(400).json({
+        success: false,
         error: 'Upload error',
-        message: error.message
+        message: error.message,
+        fallback: createDefaultAudioBasedAnalysis('', 'Upload error')
       });
     }
 
     // Handle file filter errors
     if (error.message === 'Only .wav, .mp3, and .webm files are allowed') {
       return res.status(400).json({
+        success: false,
         error: 'Invalid file type',
-        message: 'Only .wav, .mp3, and .webm files are allowed'
+        message: 'Only .wav, .mp3, and .webm files are allowed',
+        fallback: createDefaultAudioBasedAnalysis('', 'Invalid file type')
       });
     }
 
     res.status(500).json({
+      success: false,
       error: 'Internal server error',
-      message: 'Failed to process audio file'
+      message: 'Failed to process audio file',
+      fallback: createDefaultAudioBasedAnalysis('', 'Internal server error')
     });
   }
 };
@@ -321,7 +335,6 @@ export const analyzePitch = async (req: Request, res: Response) => {
     try {
       // Try text-based analysis
       const analysis = await analyzePitchWithTextBasedAnalysis(pitchText);
-      
       res.json({
         success: true,
         data: {
@@ -334,7 +347,7 @@ export const analyzePitch = async (req: Request, res: Response) => {
       });
     } catch (error: any) {
       console.error('OpenAI analysis failed:', error);
-      
+
       // Handle specific OpenAI errors with appropriate messages
       if (error.status === 429 || error.message?.includes('quota')) {
         return res.status(429).json({
@@ -343,7 +356,7 @@ export const analyzePitch = async (req: Request, res: Response) => {
           details: 'OpenAI API quota exceeded'
         });
       }
-      
+
       if (error.status === 401 || error.message?.includes('API key')) {
         return res.status(500).json({
           error: 'Service configuration error',
@@ -351,7 +364,7 @@ export const analyzePitch = async (req: Request, res: Response) => {
           details: 'Invalid or expired OpenAI API key'
         });
       }
-      
+
       if (error.status === 404 || error.message?.includes('model')) {
         return res.status(500).json({
           error: 'Service temporarily unavailable',
@@ -359,12 +372,14 @@ export const analyzePitch = async (req: Request, res: Response) => {
           details: 'OpenAI model not accessible'
         });
       }
-      
-      // Generic OpenAI service error
+
+      // Generic OpenAI service error: return default text-based analysis
+      const fallbackAnalysis = createDefaultTextBasedAnalysis(pitchText, 'AI service unavailable');
       return res.status(503).json({
         error: 'AI service unavailable',
         message: 'Our AI analysis service is temporarily unavailable. Please try again in a few minutes.',
-        details: 'OpenAI service error'
+        details: 'OpenAI service error',
+        fallback: fallbackAnalysis
       });
     }
   } catch (error) {
