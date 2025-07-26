@@ -134,13 +134,21 @@ Respond with JSON only. No extra text.`;
     let analysis: AudioBasedAnalysis;
     try {
       analysis = JSON.parse(jsonString);
+      console.log('Audio-based analysis response:', analysis);
     } catch (e) {
       return createDefaultAudioBasedAnalysis(transcript, 'Failed to parse OpenAI response. Please try again.');
     }
 
     // Validate the response structure (basic check)
-    if (!analysis.tone || !analysis.confidence || !analysis.clarity || !analysis.fillerWords || !analysis.jargon || !analysis.structure || !analysis.persuasiveness || !analysis.engagement || !analysis.credibility || !analysis.audienceFit || !analysis.originality || !analysis.emotionalImpact || !analysis.improvedVersion) {
-      return createDefaultAudioBasedAnalysis(transcript, 'Invalid response structure from OpenAI');
+    const requiredFields = [
+      'tone', 'confidence', 'clarity', 'fillerWords', 'jargon', 'structure',
+      'persuasiveness', 'engagement', 'credibility', 'audienceFit',
+      'originality', 'emotionalImpact', 'improvedVersion', 'overallScore'
+    ];
+    const missingFields = requiredFields.filter(field => !Object.prototype.hasOwnProperty.call(analysis, field));
+    if (missingFields.length > 0) {
+      console.error('Missing required fields in OpenAI response:', missingFields);
+      return createDefaultAudioBasedAnalysis(transcript, 'Invalid response structure from OpenAI. Missing: ' + missingFields.join(', '));
     }
 
     return analysis;

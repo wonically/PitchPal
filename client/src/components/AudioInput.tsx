@@ -237,9 +237,14 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Debug: log file type and name
+      console.log('Selected file:', file);
+      console.log('File type:', file.type, 'File name:', file.name);
       // Validate file type
       const allowedTypes = ['audio/mp3', 'audio/mpeg', 'audio/wav'];
-      if (!allowedTypes.includes(file.type)) {
+      // Accept 'audio/x-wav' as well (common for .wav files)
+      const extendedAllowedTypes = [...allowedTypes, 'audio/x-wav'];
+      if (!extendedAllowedTypes.includes(file.type)) {
         alert('Please select an MP3 or WAV file.');
         return;
       }

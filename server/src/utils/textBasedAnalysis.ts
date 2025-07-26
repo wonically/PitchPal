@@ -88,6 +88,7 @@ Respond with JSON only. No extra text.`;
     let analysis: TextBasedAnalysis;
     try {
       analysis = JSON.parse(content);
+      console.log('Text-based analysis response:', analysis);
     } catch (e) {
       throw new Error('Failed to parse OpenAI response. Please try again.');
     }

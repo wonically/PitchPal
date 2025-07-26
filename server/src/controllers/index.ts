@@ -28,7 +28,7 @@ const storage = multer.diskStorage({
 
 // File filter to accept only .wav, .mp3, and .webm files
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedMimeTypes = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/webm'];
+  const allowedMimeTypes = ['audio/wav', 'audio/x-wav', 'audio/mpeg', 'audio/mp3', 'audio/webm'];
   const allowedExtensions = ['.wav', '.mp3', '.webm'];
   
   const fileExtension = path.extname(file.originalname).toLowerCase();
