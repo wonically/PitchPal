@@ -55,6 +55,12 @@ export interface Engagement {
   energy_level: 'low' | 'medium' | 'high';
 }
 
+export interface Memorability {
+  score: number; // 0-100
+  description: string;
+  suggestions: string[];
+}
+
 export interface Credibility {
   score: number; // 0-100
   evidence: string[];
@@ -82,31 +88,29 @@ export interface EmotionalImpact {
 }
 
 export interface AudioBasedAnalysis {
-  "tone": Tone;
-  "confidence": Confidence;
-  "clarity": Clarity;
-  "fillerWords": FillerWords;
-  "jargon": Jargon;
-  "structure": Structure;
-  "persuasiveness": Persuasiveness;
-  "engagement": Engagement;
-  "credibility": Credibility;
-  "audienceFit": AudienceFit;
-  "originality": Originality;
-  "emotionalImpact": EmotionalImpact;
-  "improvedVersion": string;
-  "overallScore": number;
+  tone: Tone;
+  confidence: Confidence;
+  clarity: Clarity;
+  fillerWords: FillerWords;
+  jargon: Jargon;
+  structure: Structure;
+  persuasiveness: Persuasiveness;
+  engagement: Engagement;
+  credibility: Credibility;
+  audienceFit: AudienceFit;
+  originality: Originality;
+  emotionalImpact: EmotionalImpact;
+  improvedVersion: string;
+  overallScore: number;
 }
 
 export interface TextBasedAnalysis {
     tone: Tone;
-    confidence: Confidence;
     clarity: Clarity;
-    fillerWords: FillerWords;
     jargon: Jargon;
     structure: Structure;
     persuasiveness: Persuasiveness;
-    engagement: Engagement;
+    memorability: Memorability;
     credibility: Credibility;
     audienceFit: AudienceFit;
     originality: Originality;
@@ -211,18 +215,10 @@ export function createDefaultTextBasedAnalysis(
       description: errorMessage,
       suggestions: []
     },
-    confidence: {
-      level: 'medium',
-      evidence: [errorMessage]
-    },
     clarity: {
       score: 0,
       description: errorMessage,
       suggestions: []
-    },
-    fillerWords: {
-      count: 0,
-      examples: []
     },
     jargon: {
       count: 0,
@@ -244,10 +240,10 @@ export function createDefaultTextBasedAnalysis(
         feedback: errorMessage
       }
     },
-    engagement: {
+    memorability: {
       score: 0,
-      vocal_variety: 'medium',
-      energy_level: 'medium'
+      description: errorMessage,
+      suggestions: []
     },
     credibility: {
       score: 0,

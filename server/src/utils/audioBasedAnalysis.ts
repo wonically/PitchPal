@@ -100,8 +100,8 @@ IMPORTANT: Detect the language of the input transcript and provide the "improved
 
 Respond with JSON only. No extra text.`;
 
-    const completion = await client.chat.completions.create({
-      model: "gpt-4",
+    const response = await client.chat.completions.create({
+      model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
@@ -112,19 +112,19 @@ Respond with JSON only. No extra text.`;
           content: prompt
         }
       ],
+      max_tokens: 1500,
       temperature: 0.3, // Lower temperature for more consistent analysis
-      max_tokens: 2000
     });
 
-    const responseContent = completion.choices[0]?.message?.content;
-    
-    if (!responseContent) {
-      throw new Error('No response received from GPT-4');
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('No response received from OpenAI');
     }
 
+
     // Extract JSON from the response (in case GPT returns extra text)
-    let jsonString = responseContent;
-    const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
+    let jsonString = content;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       jsonString = jsonMatch[0];
     }

@@ -2,19 +2,18 @@ import OpenAI from 'openai';
 import { TextBasedAnalysis, createDefaultTextBasedAnalysis } from './analysisTypes';
 
 // Lazy initialization of OpenAI client
-let openaiClient: OpenAI | null = null;
+let openai: OpenAI | null = null;
 
-function getOpenAIClient(): OpenAI {
-  if (!openaiClient) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is not set');
+const getOpenAIClient = (): OpenAI => {
+  if (!openai) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.');
     }
-    openaiClient = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    openai = new OpenAI({ apiKey });
   }
-  return openaiClient;
-}
+  return openai;
+};
 
 export async function analyzePitchWithTextBasedAnalysis(pitchText: string): Promise<TextBasedAnalysis> {
   try {
@@ -28,13 +27,11 @@ Pitch:
 Use this structure:
 {
   "tone": { "score": 0-100, "description": "...", "suggestions": ["...", "..."] },
-  "confidence": { "level": "low/medium/high", "evidence": ["...", "..."] },
   "clarity": { "score": 0-100, "description": "...", "suggestions": ["...", "..."] },
-  "fillerWords": { "count": 0, "examples": ["...", "..."] },
   "jargon": { "count": 0, "examples": ["...", "..."], "severity": "low/medium/high" },
   "structure": { "score": 0-100, "description": "...", "suggestions": ["...", "..."] },
   "persuasiveness": { "score": 0-100, "description": "...", "suggestions": ["...", "..."], "callToAction": { "present": true/false, "strength": "weak/strong", "feedback": "..." } },
-  "engagement": { "score": 0-100, "vocal_variety": "low/medium/high", "energy_level": "low/medium/high" },
+  "memorability": { "score": 0-100, "description": "...", "suggestions": ["...", "..."] },
   "credibility": { "score": 0-100, "evidence": ["...", "..."], "weaknesses": ["...", "..."] },
   "audienceFit": { "score": 0-100, "description": "...", "issues": ["...", "..."], "suggestions": ["...", "..."] },
   "originality": { "score": 0-100, "description": "...", "comparisons": ["...", "..."], "suggestions": ["...", "..."] },
@@ -45,13 +42,11 @@ Use this structure:
 
 Criteria:
 - Tone: confidence, enthusiasm, professionalism
-- Confidence: assertiveness, certainty in statements, conviction
 - Clarity: ease of understanding, clear messaging
-- FillerWords: count and identify filler words/phrases (um, uh, like, you know, etc.)
 - Jargon: complexity, buzzwords, technical terms that may confuse audience
 - Structure: logical flow (problem → solution → market → ask)
 - Persuasiveness: compelling arguments, credibility, call-to-action strength
-- Engagement: how captivating and dynamic the pitch is
+- Memorability: how memorable the pitch is
 - Credibility: trustworthiness, evidence provided, expertise demonstrated
 - AudienceFit: how well tailored to target audience
 - Originality: uniqueness, differentiation from competitors
@@ -68,7 +63,7 @@ Respond with JSON only. No extra text.`;
       messages: [
         {
           role: "system",
-          content: "You are a professional pitch analyst. Respond only with valid JSON containing the pitch analysis. IMPORTANT: The improvedVersion field must be in the same language as the input pitch, while all other fields remain in English."
+          content: "You are a professional pitch analyst. Provide detailed, actionable feedback in the exact JSON format requested. Be thorough but concise in your analysis. Always respond with valid JSON only. IMPORTANT: The improvedVersion field must be in the same language as the input transcript, while all other fields remain in English."
         },
         {
           role: "user",
@@ -84,17 +79,31 @@ Respond with JSON only. No extra text.`;
       throw new Error('No response received from OpenAI');
     }
 
+    // Extract JSON from the response (in case GPT returns extra text)
+    let jsonString = content;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonString = jsonMatch[0];
+    }
+
     // Parse the JSON response
     let analysis: TextBasedAnalysis;
     try {
-      analysis = JSON.parse(content);
+      analysis = JSON.parse(jsonString);
       console.log('Text-based analysis response:', analysis);
     } catch (e) {
       throw new Error('Failed to parse OpenAI response. Please try again.');
     }
 
     // Validate the response structure (basic check)
-    if (!analysis.tone || !analysis.confidence || !analysis.clarity || !analysis.fillerWords || !analysis.jargon || !analysis.structure || !analysis.persuasiveness || !analysis.engagement || !analysis.credibility || !analysis.audienceFit || !analysis.originality || !analysis.emotionalImpact || !analysis.improvedVersion) {
+    const requiredFields = [
+      'tone', 'clarity', 'jargon', 'structure', 'persuasiveness',
+      'memorability', 'credibility', 'audienceFit', 'originality',
+      'emotionalImpact', 'improvedVersion', 'overallScore'
+    ];
+    const missingFields = requiredFields.filter(field => !Object.prototype.hasOwnProperty.call(analysis, field));
+    if (missingFields.length > 0) {
+      console.error('Missing fields in OpenAI response:', missingFields);
       return createDefaultTextBasedAnalysis(pitchText, 'Invalid response structure from OpenAI');
     }
 
