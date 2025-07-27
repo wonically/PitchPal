@@ -19,9 +19,9 @@ export async function analyzePitchWithTextBasedAnalysis(pitchText: string): Prom
   try {
     const openai = getOpenAIClient();
 
-    const prompt = `You are a harsh expert pitch analyst. Analyze the following pitch and respond in **valid JSON** only. Be strict and thorough.
+    const prompt = `You are a harsh expert pitch coach. Analyze this pitch to give structured feedback. Be strict and thorough.
 
-Pitch:
+PITCH:
 "${pitchText}"
 
 Use this structure:
@@ -63,7 +63,7 @@ Respond with JSON only. No extra text.`;
       messages: [
         {
           role: "system",
-          content: "You are a professional pitch analyst. Provide detailed, actionable feedback in the exact JSON format requested. Be thorough but concise in your analysis. Always respond with valid JSON only. IMPORTANT: The improvedVersion field must be in the same language as the input transcript, while all other fields remain in English."
+          content: "You are a professional pitch coach. Provide detailed, actionable feedback in the exact JSON format requested. Be thorough but concise in your analysis. Always respond with valid JSON only. IMPORTANT: The improvedVersion field must be in the same language as the input pitch, while all other fields remain in English."
         },
         {
           role: "user",
