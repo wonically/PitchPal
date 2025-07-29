@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme } from '@mui/material/styles';
 import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, CircularProgress, Chip } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { AudioBasedAnalysis, TextBasedAnalysis } from '../../../server/src/utils/analysisTypes';
@@ -97,7 +98,8 @@ type AnalysisResultProps = {
 };
 
 // Helper to render nested properties recursively
-const renderProps = (obj: any, structure: (string | (string | string[])[])[]) => {
+
+const renderProps = (obj: any, structure: (string | (string | string[])[])[], theme: any) => {
   // Helper function to format property names to human-readable text
   const formatPropertyName = (propName: string): string => {
     const propertyMap: { [key: string]: string } = {
@@ -124,12 +126,12 @@ const renderProps = (obj: any, structure: (string | (string | string[])[])[]) =>
   };
 
   // Helper function to get level color for vocal_variety and energy_level
-  const getLevelColor = (level: string): string => {
+  const getLevelColor = (level: string, theme: any): string => {
     switch (level.toLowerCase()) {
-      case 'high': return '#4caf50'; // Green
-      case 'medium': return '#ff9800'; // Orange
-      case 'low': return '#f44336'; // Red
-      default: return '#757575'; // Gray for unknown
+      case 'high': return theme.palette.success.main; // Green
+      case 'medium': return theme.palette.warning.main; // Orange
+      case 'low': return theme.palette.error.main; // Red
+      default: return theme.palette.grey[600]; // Gray for unknown
     }
   };
 
@@ -182,7 +184,7 @@ const renderProps = (obj: any, structure: (string | (string | string[])[])[]) =>
           return (
             <li key={nestedKey} style={{ marginBottom: 4 }}>
               <strong>{formatPropertyName(nestedKey)}:</strong>
-              {obj && obj[nestedKey] ? renderProps(obj[nestedKey], nestedProps) : ' N/A'}
+              {obj && obj[nestedKey] ? renderProps(obj[nestedKey], nestedProps, theme) : ' N/A'}
             </li>
           );
         } else {
@@ -203,9 +205,9 @@ const renderProps = (obj: any, structure: (string | (string | string[])[])[]) =>
                       size="small"
                       variant="outlined"
                       sx={{
-                        backgroundColor: 'rgba(97, 218, 251, 0.1)',
-                        borderColor: '#61dafb',
-                        color: '#61dafb',
+                        backgroundColor: theme.palette.primary.main + '1A', // 10% opacity
+                        borderColor: theme.palette.primary.main,
+                        color: theme.palette.primary.main,
                         fontSize: '0.7rem'
                       }}
                     />
@@ -225,8 +227,8 @@ const renderProps = (obj: any, structure: (string | (string | string[])[])[]) =>
                     label={obj[key]}
                     size="small"
                     sx={{
-                      backgroundColor: getLevelColor(obj[key]),
-                      color: '#fff',
+                      backgroundColor: getLevelColor(obj[key], theme),
+                      color: theme.palette.getContrastText(getLevelColor(obj[key], theme)),
                       fontWeight: 'bold',
                       fontSize: '0.7rem',
                       textTransform: 'uppercase'
@@ -264,6 +266,7 @@ const renderProps = (obj: any, structure: (string | (string | string[])[])[]) =>
 };
 
 const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, mode, audioTranscript, originalText, historyMeta }) => {
+  const theme = useTheme();
   const overallScore = (analysis as any).overallScore || 0;
   
   // Get the original text/transcript
@@ -326,36 +329,40 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, mode, audioTr
   };
 
   // Helper function to get score color
-  const getScoreColor = (score: number): string => {
-    if (score >= 75) return '#4caf50'; // Green
-    if (score >= 50) return '#ff9800'; // Orange
-    return '#f44336'; // Red
+  const getScoreColor = (score: number, theme: any): string => {
+    if (!theme || !theme.palette) return '';
+    if (score >= 75) return theme.palette.success?.main;
+    if (score >= 50) return theme.palette.warning?.main;
+    return theme.palette.error?.main;
   };
 
   // Helper function to get count color (lower is better for filler words and jargon)
-  const getCountColor = (count: number): string => {
-    if (count <= 2) return '#4caf50'; // Green - good
-    if (count <= 5) return '#ff9800'; // Orange - moderate
-    return '#f44336'; // Red - high
+  const getCountColor = (count: number, theme: any): string => {
+    if (!theme || !theme.palette) return '';
+    if (count <= 2) return theme.palette.success?.main;
+    if (count <= 5) return theme.palette.warning?.main;
+    return theme.palette.error?.main;
   };
 
   // Helper function to get severity color
-  const getSeverityColor = (severity: string): string => {
-    switch (severity.toLowerCase()) {
-      case 'low': return '#4caf50'; // Green
-      case 'medium': return '#ff9800'; // Orange
-      case 'high': return '#f44336'; // Red
-      default: return '#757575'; // Gray for unknown
+  const getSeverityColor = (severity: string, theme: any): string => {
+    if (!theme || !theme.palette) return '';
+    switch (severity?.toLowerCase?.()) {
+      case 'low': return theme.palette.success?.main;
+      case 'medium': return theme.palette.warning?.main;
+      case 'high': return theme.palette.error?.main;
+      default: return (theme.palette.grey && theme.palette.grey[600]) || '';
     }
   };
 
-  // Helper function to get confidence level color
-  const getLevelColor = (level: string): string => {
-    switch (level.toLowerCase()) {
-      case 'high': return '#4caf50'; // Green
-      case 'medium': return '#ff9800'; // Orange
-      case 'low': return '#f44336'; // Red
-      default: return '#757575'; // Gray for unknown
+  // Helper function to get confidence level color (for badges)
+  const getLevelColorBadge = (level: string, theme: any): string => {
+    if (!theme || !theme.palette) return '';
+    switch (level?.toLowerCase?.()) {
+      case 'high': return theme.palette.success?.main;
+      case 'medium': return theme.palette.warning?.main;
+      case 'low': return theme.palette.error?.main;
+      default: return (theme.palette.grey && theme.palette.grey[600]) || '';
     }
   };
   
@@ -368,6 +375,8 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, mode, audioTr
     sectionsWithoutOverallScore = TEXT_ANALYSIS_STRUCTURE.filter(([section]) => section !== 'overallScore');
   }
   
+
+
   return (
     <div>
       {/* Overall Score Circle at the top */}
@@ -386,7 +395,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, mode, audioTr
           size={120}
           thickness={6}
           sx={{
-            color: getScoreColor(overallScore),
+            color: getScoreColor(overallScore, theme),
             '& .MuiCircularProgress-circle': {
               strokeLinecap: 'round',
             },
@@ -401,10 +410,10 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, mode, audioTr
             justifyContent: 'center',
           }}
         >
-          <Typography variant="h4" component="div" sx={{ color: '#fff', fontWeight: 'bold' }}>
+          <Typography variant="h4" component="div" sx={{ color: theme.palette.text.primary, fontWeight: 'bold' }}>
             {overallScore}
           </Typography>
-          <Typography variant="body2" sx={{ color: '#ccc' }}>
+          <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
             / 100
           </Typography>
         </Box>
@@ -412,11 +421,11 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, mode, audioTr
 
       {/* Original Content Section */}
       {originalContent && (
-        <Box sx={{ marginBottom: 1, backgroundColor: '#23233a', padding: 2, borderRadius: '15px' }}>
-          <Typography variant="h6" sx={{ color: '#61dafb', marginBottom: 1 }}>
+        <Box sx={{ marginBottom: 1, backgroundColor: theme.palette.background.paper, padding: 2, borderRadius: '15px' }}>
+          <Typography variant="h6" sx={{ color: theme.palette.primary.main, marginBottom: 1 }}>
             {mode === 'audio' ? 'Transcript' : 'Original Text'}
           </Typography>
-          <Typography sx={{ color: '#fff', lineHeight: 1.6 }}>
+          <Typography sx={{ color: theme.palette.text.primary, lineHeight: 1.6 }}>
             {originalContent}
           </Typography>
         </Box>
@@ -449,7 +458,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, mode, audioTr
               key={section} 
               sx={{ 
                 marginBottom: 0, 
-                backgroundColor: '#23233a', 
+                backgroundColor: theme.palette.background.paper, 
                 '&:before': { display: 'none' },
                 '&.Mui-expanded': {
                   margin: 0,
@@ -466,89 +475,89 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, mode, audioTr
               }}
             >
               <AccordionSummary 
-                expandIcon={isExpandable ? <ExpandMoreIcon sx={{ color: '#61dafb' }} /> : null}
+                expandIcon={isExpandable ? <ExpandMoreIcon sx={{ color: theme.palette.primary.main }} /> : null}
                 sx={{ 
-                  backgroundColor: '#2d2d44',
-                cursor: isExpandable ? 'pointer' : 'default',
-                minHeight: '64px',
-                '&.Mui-expanded': {
-                  minHeight: '64px'
-                },
-                '& .MuiAccordionSummary-content': {
-                  margin: '12px 0',
+                  backgroundColor: theme.palette.background.default,
+                  cursor: isExpandable ? 'pointer' : 'default',
+                  minHeight: '64px',
                   '&.Mui-expanded': {
-                    margin: '12px 0'
+                    minHeight: '64px'
+                  },
+                  '& .MuiAccordionSummary-content': {
+                    margin: '12px 0',
+                    '&.Mui-expanded': {
+                      margin: '12px 0'
+                    }
                   }
-                }
-              }}
-              onClick={isExpandable ? undefined : (e) => e.preventDefault()}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginRight: 2 }}>
-                <Typography variant="h6" sx={{ color: '#61dafb' }}>
-                  {formatSectionTitle(section)}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  {score !== null && (
-                    <Chip 
-                      label={`${score}/100`}
-                      size="small"
-                      sx={{ 
-                        backgroundColor: getScoreColor(score),
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        fontSize: '0.75rem'
-                      }}
-                    />
-                  )}
-                  {count !== null && (
-                    <Chip 
-                      label={`${count} ${count === 1 ? 'term' : 'terms'}`}
-                      size="small"
-                      sx={{ 
-                        backgroundColor: getCountColor(count),
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        fontSize: '0.75rem'
-                      }}
-                    />
-                  )}
-                  {severity !== null && (
-                    <Chip 
-                      label={severity}
-                      size="small"
-                      sx={{ 
-                        backgroundColor: getSeverityColor(severity),
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        fontSize: '0.75rem',
-                        textTransform: 'uppercase'
-                      }}
-                    />
-                  )}
-                  {level !== null && (
-                    <Chip 
-                      label={level}
-                      size="small"
-                      sx={{ 
-                        backgroundColor: getLevelColor(level),
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        fontSize: '0.75rem',
-                        textTransform: 'uppercase'
-                      }}
-                    />
-                  )}
+                }}
+                onClick={isExpandable ? undefined : (e) => e.preventDefault()}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginRight: 2 }}>
+                  <Typography variant="h6" sx={{ color: theme.palette.primary.main }}>
+                    {formatSectionTitle(section)}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    {score !== null && (
+                      <Chip 
+                        label={`${score}/100`}
+                        size="small"
+                        sx={{ 
+                          backgroundColor: getScoreColor(score, theme),
+                          color: theme.palette.getContrastText(getScoreColor(score, theme)),
+                          fontWeight: 'bold',
+                          fontSize: '0.75rem'
+                        }}
+                      />
+                    )}
+                    {count !== null && (
+                      <Chip 
+                        label={`${count} ${count === 1 ? 'term' : 'terms'}`}
+                        size="small"
+                        sx={{ 
+                          backgroundColor: getCountColor(count, theme),
+                          color: theme.palette.getContrastText(getCountColor(count, theme)),
+                          fontWeight: 'bold',
+                          fontSize: '0.75rem'
+                        }}
+                      />
+                    )}
+                    {severity !== null && (
+                      <Chip 
+                        label={severity}
+                        size="small"
+                        sx={{ 
+                          backgroundColor: getSeverityColor(severity, theme),
+                          color: theme.palette.getContrastText(getSeverityColor(severity, theme)),
+                          fontWeight: 'bold',
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase'
+                        }}
+                      />
+                    )}
+                    {level !== null && (
+                      <Chip 
+                        label={level}
+                        size="small"
+                        sx={{ 
+                          backgroundColor: getLevelColorBadge(level, theme),
+                          color: theme.palette.getContrastText(getLevelColorBadge(level, theme)),
+                          fontWeight: 'bold',
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase'
+                        }}
+                      />
+                    )}
+                  </Box>
                 </Box>
-              </Box>
-            </AccordionSummary>
-            {isExpandable && (
-              <AccordionDetails sx={{ backgroundColor: '#23233a', padding: 2 }}>
-                {renderProps(sectionData, props)}
-              </AccordionDetails>
-            )}
-          </Accordion>
-        );
-      })}
+              </AccordionSummary>
+              {isExpandable && (
+                <AccordionDetails sx={{ backgroundColor: theme.palette.background.paper, padding: 2 }}>
+                  {renderProps(sectionData, props, theme)}
+                </AccordionDetails>
+              )}
+            </Accordion>
+          );
+        })}
       </Box>
     </div>
   );

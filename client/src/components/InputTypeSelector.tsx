@@ -29,17 +29,6 @@ const InputTypeSelector: React.FC<InputTypeSelectorProps> = ({
         onChange={(_, newInputType) => newInputType && onInputTypeChange(newInputType)}
         aria-label="input type"
         disabled={disabled}
-        sx={{
-          '& .MuiToggleButton-root': {
-            color: '#b0bec5',
-            borderColor: '#61dafb',
-            '&.Mui-selected': {
-              backgroundColor: '#61dafb',
-              color: '#1e1e2e',
-              '&:hover': { backgroundColor: '#4fc3f7' },
-            },
-          },
-        }}
       >
         <ToggleButton value="text" aria-label="text input">
           <EditIcon sx={{ mr: 1 }} />Text Input
@@ -53,20 +42,6 @@ const InputTypeSelector: React.FC<InputTypeSelectorProps> = ({
         onClick={() => onTabChange(currentTab === 1 ? 0 : 1)}
         startIcon={<HistoryIcon />}
         disabled={disabled}
-        sx={{
-          borderColor: '#61dafb',
-          color: currentTab === 1 ? '#1e1e2e' : '#61dafb',
-          backgroundColor: currentTab === 1 ? '#61dafb' : 'transparent',
-          fontWeight: 'bold',
-          '&:hover': {
-            backgroundColor: currentTab === 1 ? '#4fc3f7' : 'rgba(97, 218, 251, 0.1)',
-            borderColor: '#4fc3f7',
-          },
-          '&:disabled': {
-            borderColor: '#555',
-            color: '#999',
-          },
-        }}
       >
         History {historyCount > 0 ? `(${historyCount})` : ''}
       </Button>

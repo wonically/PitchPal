@@ -8,7 +8,6 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Stack,
-  Chip,
   Paper
 } from '@mui/material';
 import {
@@ -18,7 +17,6 @@ import {
   Replay as ReplayIcon,
   VolumeUp as VolumeIcon
 } from '@mui/icons-material';
-import './AudioInput.css';
 
 interface AudioInputProps {
   onAudioReady: (audioFile: File, mode: 'record' | 'upload') => void;
@@ -36,16 +34,11 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
   const [volumeLevel, setVolumeLevel] = useState<number>(0);
   
-  // Helper function to format the timer display (masks first 3 seconds with countdown)
-  const formatTimerDisplay = (seconds: number): string => {
+  // Helper function to display countdown and then 'Recording' with opacity flicker (no timer)
+  const getRecordingStatus = (seconds: number): string | null => {
     if (seconds === 0 || seconds === 1) return "Ready...";
     if (seconds === 2) return "Go!";
-    
-    // After 3 seconds, show actual recording time (starting from 0)
-    const adjustedSeconds = seconds - 3;
-    const mins = Math.floor(adjustedSeconds / 60);
-    const secs = adjustedSeconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return "Recording";
   };
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -276,12 +269,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
     }
   };
 
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const getAudioPreviewUrl = (): string | null => {
     if (inputMode === 'upload' && uploadedFile) {
       return URL.createObjectURL(uploadedFile);
@@ -293,9 +280,9 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
   };
 
   return (
-    <Card sx={{ backgroundColor: '#2a2a3e', color: 'white' }}>
+    <Card sx={{ backgroundColor: (theme) => theme.palette.background.paper, color: (theme) => theme.palette.text.primary, boxShadow: 'none' }}>
       <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ color: '#61dafb', textAlign: 'center' }}>
+        <Typography variant="h6" gutterBottom sx={{ color: (theme) => theme.palette.primary.main, textAlign: 'center' }}>
           Audio Pitch Input
         </Typography>
         
@@ -307,19 +294,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
             onChange={(_, newMode) => newMode && handleModeSwitch(newMode)}
             aria-label="input mode"
             disabled={disabled}
-            sx={{
-              '& .MuiToggleButton-root': {
-                color: '#b0bec5',
-                borderColor: '#61dafb',
-                '&.Mui-selected': {
-                  backgroundColor: '#61dafb',
-                  color: '#1e1e2e',
-                  '&:hover': {
-                    backgroundColor: '#4fc3f7',
-                  },
-                },
-              },
-            }}
           >
             <ToggleButton value="record" aria-label="record">
               <MicIcon sx={{ mr: 1 }} />
@@ -343,20 +317,21 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                   onClick={handleStartRecording}
                   disabled={disabled}
                   startIcon={<MicIcon />}
-                  sx={{
-                    backgroundColor: '#61dafb',
-                    color: '#1e1e2e',
+                  sx={(theme) => ({
+                    backgroundColor: theme.palette.primary.main,
+                    color: theme.palette.background.paper,
                     fontWeight: 'bold',
                     px: 4,
                     py: 1.5,
+                    borderRadius: Number(theme.shape.borderRadius) * 2,
                     '&:hover': {
-                      backgroundColor: '#4fc3f7',
+                      backgroundColor: theme.palette.primary.light,
                     },
                     '&:disabled': {
-                      backgroundColor: '#555',
-                      color: '#999',
+                      backgroundColor: theme.palette.action.disabledBackground,
+                      color: theme.palette.action.disabled,
                     },
-                  }}
+                  })}
                 >
                   Start Recording
                 </Button>
@@ -371,38 +346,37 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                   onClick={handleStopRecording}
                   disabled={disabled}
                   startIcon={<StopIcon />}
-                  sx={{
-                    backgroundColor: '#f44336',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    px: 4,
-                    py: 1.5,
-                    mb: 2,
-                    '&:hover': {
-                      backgroundColor: '#d32f2f',
-                    },
-                  }}
+                  color="error"
+                  sx={{ mb: 2, borderRadius: 50, px: 4, py: 1.5 }}
                 >
                   Stop Recording
                 </Button>
-                
-                <Box display="flex" alignItems="center" justifyContent="center" gap={2} mb={2}>
-                  <Chip 
-                    icon={<Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#f44336' }} />}
-                    label={formatTimerDisplay(recordingDuration)}
-                    sx={{ 
-                      backgroundColor: '#1e1e2e',
-                      color: '#f44336',
-                      fontWeight: 'bold',
-                      fontSize: '1.1rem'
-                    }}
-                  />
+                <Box mb={2}>
+                  {(() => {
+                    const status = getRecordingStatus(recordingDuration);
+                    if (!status) return null;
+                    // For 'Recording', flicker opacity between 1 and 0.3 every second
+                    const isFlicker = status === 'Recording';
+                    const opacity = isFlicker ? (recordingDuration % 2 === 0 ? 1 : 0.3) : 1;
+                    return (
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          color: (theme) => theme.palette.error.main,
+                          fontWeight: 'bold',
+                          transition: 'opacity 0.2s',
+                          opacity
+                        }}
+                      >
+                        {status}
+                      </Typography>
+                    );
+                  })()}
                 </Box>
-                
                 <Box>
                   <Stack direction="row" alignItems="center" spacing={1} justifyContent="center">
-                    <VolumeIcon sx={{ color: '#61dafb' }} />
-                    <Typography variant="body2" sx={{ color: '#b0bec5' }}>Volume:</Typography>
+                    <VolumeIcon sx={{ color: (theme) => theme.palette.primary.main }} />
+                    <Typography variant="body2" sx={{ color: (theme) => theme.palette.text.secondary }}>Volume:</Typography>
                     <Box display="flex" gap={0.5}>
                       {Array.from({ length: 20 }, (_, i) => (
                         <Box
@@ -410,9 +384,14 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                           sx={{
                             width: 4,
                             height: 20,
-                            backgroundColor: i < volumeLevel * 20 
-                              ? (i > 16 ? '#ff4444' : i > 10 ? '#ffaa00' : '#44ff44')
-                              : 'rgba(255, 255, 255, 0.1)',
+                            backgroundColor: (theme) =>
+                              i < volumeLevel * 20
+                                ? (i > 16
+                                    ? theme.palette.error.main
+                                    : i > 10
+                                      ? theme.palette.warning.main
+                                      : theme.palette.success.main)
+                                : theme.palette.action.disabledBackground,
                             borderRadius: 0.5
                           }}
                         />
@@ -425,8 +404,8 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
             
             {recordingState === 'recorded' && (
               <Box textAlign="center">
-                <Typography variant="body1" sx={{ color: '#e0e0e0', mb: 2 }}>
-                  Recording complete! Duration: {formatDuration(Math.max(0, recordingDuration - 3))}
+                <Typography variant="body1" sx={{ color: (theme) => theme.palette.text.primary, mb: 2 }}>
+                  Recording complete!
                 </Typography>
                 <Stack direction="row" spacing={2} justifyContent="center">
                   <Button
@@ -438,14 +417,15 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                     }}
                     disabled={disabled}
                     startIcon={<ReplayIcon />}
-                    sx={{
-                      borderColor: '#61dafb',
-                      color: '#61dafb',
+                    sx={(theme) => ({
+                      borderColor: theme.palette.primary.main,
+                      color: theme.palette.primary.main,
+                      borderRadius: theme.shape.borderRadius,
                       '&:hover': {
-                        borderColor: '#4fc3f7',
-                        backgroundColor: 'rgba(97, 218, 251, 0.1)',
+                        borderColor: theme.palette.primary.light,
+                        backgroundColor: theme.palette.action.hover,
                       },
-                    }}
+                    })}
                   >
                     Record Again
                   </Button>
@@ -453,13 +433,14 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                     variant="contained"
                     onClick={handleFinishRecording}
                     disabled={disabled}
-                    sx={{
-                      backgroundColor: '#4caf50',
-                      color: 'white',
+                    sx={(theme) => ({
+                      backgroundColor: theme.palette.success.main,
+                      color: theme.palette.getContrastText(theme.palette.success.main),
+                      borderRadius: theme.shape.borderRadius,
                       '&:hover': {
-                        backgroundColor: '#388e3c',
+                        backgroundColor: theme.palette.success.dark,
                       },
-                    }}
+                    })}
                   >
                     Use This Recording
                   </Button>
@@ -484,37 +465,37 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
             <label htmlFor="audio-file-input">
               <Paper
                 elevation={2}
-                sx={{
+                sx={(theme) => ({
                   p: 4,
                   textAlign: 'center',
                   cursor: 'pointer',
-                  backgroundColor: '#1e1e2e',
-                  border: '2px dashed #61dafb',
-                  borderRadius: 2,
+                  backgroundColor: theme.palette.background.default,
+                  border: `2px dashed ${theme.palette.primary.main}`,
+                  borderRadius: Number(theme.shape.borderRadius) * 1.5,
                   transition: 'all 0.3s ease',
                   '&:hover': {
-                    backgroundColor: '#2a2a3e',
-                    borderColor: '#4fc3f7',
+                    backgroundColor: theme.palette.background.paper,
+                    borderColor: theme.palette.primary.light,
                   },
-                }}
+                })}
                 component="div"
               >
-                <UploadIcon sx={{ fontSize: 48, color: '#61dafb', mb: 2 }} />
+                <UploadIcon sx={{ fontSize: 48, color: (theme) => theme.palette.primary.main, mb: 2 }} />
                 {uploadedFile ? (
                   <Box>
-                    <Typography variant="h6" sx={{ color: '#e0e0e0', fontWeight: 'bold' }}>
+                    <Typography variant="h6" sx={{ color: (theme) => theme.palette.text.primary, fontWeight: 'bold' }}>
                       {uploadedFile.name}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#b0bec5' }}>
+                    <Typography variant="body2" sx={{ color: (theme) => theme.palette.text.secondary }}>
                       {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
                     </Typography>
                   </Box>
                 ) : (
                   <Box>
-                    <Typography variant="h6" sx={{ color: '#e0e0e0' }}>
+                    <Typography variant="h6" sx={{ color: (theme) => theme.palette.text.primary }}>
                       Click to select an audio file
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#b0bec5' }}>
+                    <Typography variant="body2" sx={{ color: (theme) => theme.palette.text.secondary }}>
                       Supports MP3 and WAV files (max 10MB)
                     </Typography>
                   </Box>
@@ -535,14 +516,15 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                     }}
                     disabled={disabled}
                     startIcon={<ReplayIcon />}
-                    sx={{
-                      borderColor: '#61dafb',
-                      color: '#61dafb',
+                    sx={(theme) => ({
+                      borderColor: theme.palette.primary.main,
+                      color: theme.palette.primary.main,
+                      borderRadius: theme.shape.borderRadius,
                       '&:hover': {
-                        borderColor: '#4fc3f7',
-                        backgroundColor: 'rgba(97, 218, 251, 0.1)',
+                        borderColor: theme.palette.primary.light,
+                        backgroundColor: theme.palette.action.hover,
                       },
-                    }}
+                    })}
                   >
                     Choose Different File
                   </Button>
@@ -550,13 +532,14 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                     variant="contained"
                     onClick={handleFinishUpload}
                     disabled={disabled}
-                    sx={{
-                      backgroundColor: '#4caf50',
-                      color: 'white',
+                    sx={(theme) => ({
+                      backgroundColor: theme.palette.success.main,
+                      color: theme.palette.getContrastText(theme.palette.success.main),
+                      borderRadius: theme.shape.borderRadius,
                       '&:hover': {
-                        backgroundColor: '#388e3c',
+                        backgroundColor: theme.palette.success.dark,
                       },
-                    }}
+                    })}
                   >
                     Use This File
                   </Button>
@@ -570,7 +553,7 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
         {/* Audio Preview */}
         {getAudioPreviewUrl() && (
           <Box mt={3} textAlign="center">
-            <Typography variant="h6" gutterBottom sx={{ color: '#61dafb' }}>
+            <Typography variant="h6" gutterBottom sx={{ color: (theme) => theme.palette.primary.main }}>
               Audio Preview
             </Typography>
             <audio

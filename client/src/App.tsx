@@ -131,16 +131,16 @@ function App() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: 4, backgroundColor: '#1e1e2e', color: 'white', borderRadius: 3 }}>
+      <Paper elevation={3} sx={{ p: 4 }}>
         <Box textAlign="center" mb={4}>
-          <Typography variant="h2" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#61dafb' }}>
+          <Typography variant="h2" component="h1" gutterBottom>
             🎯 PitchPal
           </Typography>
-          <Typography variant="h5" component="p" sx={{ color: '#b0bec5' }}>
+          <Typography variant="h5" component="p">
             AI-Powered Pitch Analysis
           </Typography>
         </Box>
-        <Card sx={{ mb: 4, backgroundColor: '#2a2a3e', boxShadow: 3 }}>
+        <Card sx={{ mb: 4 }}>
           <CardContent>
             <InputTypeSelector
               inputType={inputType}
@@ -168,9 +168,7 @@ function App() {
         <LoadingOverlay show={loading} />
         {error && (
           <Box sx={{ mb: 4 }}>
-            <Alert severity="error" sx={{ backgroundColor: '#ffebee', color: '#c62828', '& .MuiAlert-icon': { color: '#c62828' } }}>
-              {error}
-            </Alert>
+            <Alert severity="error">{error}</Alert>
           </Box>
         )}
         {analysis && (
@@ -185,25 +183,19 @@ function App() {
         {currentTab === 1 && (
           <Box mt={4}>
             {pitchHistory.length === 0 ? (
-              <Card sx={{ backgroundColor: '#2a2a3e', boxShadow: 3 }}>
+              <Card>
                 <CardContent>
                   <Box textAlign="center" py={6}>
-                    <HistoryIcon sx={{ fontSize: 64, color: '#61dafb', mb: 2 }} />
-                    <Typography variant="h5" sx={{ color: '#61dafb', mb: 2 }}>
+                    <HistoryIcon sx={{ fontSize: 64, mb: 2 }} />
+                    <Typography variant="h5" sx={{ mb: 2 }}>
                       No Analysis History
                     </Typography>
-                    <Typography variant="body1" sx={{ color: '#b0bec5', mb: 3 }}>
+                    <Typography variant="body1" sx={{ mb: 3 }}>
                       Your recent pitch analyses will appear here. Start by analyzing your first pitch!
                     </Typography>
                     <Button
                       variant="contained"
                       onClick={() => setCurrentTab(0)}
-                      sx={{ 
-                        backgroundColor: '#61dafb', 
-                        color: '#1e1e2e', 
-                        fontWeight: 'bold', 
-                        '&:hover': { backgroundColor: '#4fc3f7' } 
-                      }}
                     >
                       Analyze New Pitch
                     </Button>
@@ -212,10 +204,10 @@ function App() {
               </Card>
             ) : (
               <Box>
-                <Typography variant="h5" sx={{ color: '#61dafb', mb: 3, textAlign: 'center' }}>
+                <Typography variant="h5" sx={{ mb: 3, textAlign: 'center' }}>
                   📈 Recent Analysis History
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#b0bec5', mb: 3, textAlign: 'center' }}>
+                <Typography variant="body2" sx={{ mb: 3, textAlign: 'center' }}>
                   Your last {pitchHistory.length} pitch analyses (showing most recent first)
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -249,7 +241,7 @@ function App() {
             onClose={handleToastClose}
             severity={toastSeverity}
             variant="filled"
-            sx={{ width: '100%', color: 'white', '& .MuiAlert-icon': { color: 'white' } }}
+            sx={{ width: '100%' }}
           >
             {toastMessage}
           </Alert>
