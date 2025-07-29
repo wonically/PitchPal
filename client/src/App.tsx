@@ -198,7 +198,12 @@ function App() {
                     <Button
                       variant="contained"
                       onClick={() => setCurrentTab(0)}
-                      sx={{ backgroundColor: '#61dafb', color: '#1e1e2e', fontWeight: 'bold', '&:hover': { backgroundColor: '#4fc3f7' } }}
+                      sx={{ 
+                        backgroundColor: '#61dafb', 
+                        color: '#1e1e2e', 
+                        fontWeight: 'bold', 
+                        '&:hover': { backgroundColor: '#4fc3f7' } 
+                      }}
                     >
                       Analyze New Pitch
                     </Button>

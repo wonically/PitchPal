@@ -2,7 +2,6 @@ import React from 'react';
 import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, CircularProgress, Chip } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { AudioBasedAnalysis, TextBasedAnalysis } from '../../../server/src/utils/analysisTypes';
-import { get } from 'http';
 
 // Nested property keys for each top-level property in AudioBasedAnalysis
 export const AUDIO_ANALYSIS_STRUCTURE: [keyof AudioBasedAnalysis, (string | (string | string[])[])[]][] = [
@@ -413,7 +412,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, mode, audioTr
 
       {/* Original Content Section */}
       {originalContent && (
-        <Box sx={{ marginBottom: 1, backgroundColor: '#23233a', padding: 2, borderRadius: 1 }}>
+        <Box sx={{ marginBottom: 1, backgroundColor: '#23233a', padding: 2, borderRadius: '15px' }}>
           <Typography variant="h6" sx={{ color: '#61dafb', marginBottom: 1 }}>
             {mode === 'audio' ? 'Transcript' : 'Original Text'}
           </Typography>
