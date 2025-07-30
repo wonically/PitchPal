@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Container, Paper, Box, Typography, Stack, Snackbar, Alert, Avatar, AppBar, Toolbar } from '@mui/material';
+import { Container, Paper, Box, Typography, Stack, Alert, Avatar, AppBar, Toolbar } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import AudioInput from './components/AudioInput';
 import TextInput from './components/TextInput';
@@ -29,9 +29,6 @@ function App() {
   const [inputType, setInputType] = useState<'text' | 'audio'>('text');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastSeverity, setToastSeverity] = useState<'success' | 'error'>('success');
   const [chat, setChat] = useState<ChatMessage[]>(() => {
     const stored = sessionStorage.getItem('pitchChat');
     return stored ? JSON.parse(stored) : [];
@@ -46,12 +43,7 @@ function App() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chat, loading]);
 
-  const showToast = (message: string, severity: 'success' | 'error' = 'success') => {
-    setToastMessage(message);
-    setToastSeverity(severity);
-    setToastOpen(true);
-  };
-  const handleToastClose = () => setToastOpen(false);
+
 
 
   // Text analysis submit
@@ -83,7 +75,6 @@ function App() {
           timestamp: new Date().toISOString(),
         };
         setChat((prev) => [...prev, botMsg]);
-        showToast('Analysis complete!', 'success');
       } else {
         setError('Failed to analyze pitch');
       }
@@ -128,7 +119,6 @@ function App() {
           timestamp: new Date().toISOString(),
         };
         setChat((prev) => [...prev, botMsg]);
-        showToast('Audio analysis complete!', 'success');
       } else {
         setError('Failed to analyze audio');
       }
@@ -238,21 +228,7 @@ function App() {
                 <Alert severity="error">{error}</Alert>
               </Box>
             )}
-            <Snackbar
-              open={toastOpen}
-              autoHideDuration={5000}
-              onClose={handleToastClose}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            >
-              <Alert
-                onClose={handleToastClose}
-                severity={toastSeverity}
-                variant="filled"
-                sx={{ width: '100%' }}
-              >
-                {toastMessage}
-              </Alert>
-            </Snackbar>
+
           </Box>
         </Container>
       </Box>

@@ -8,11 +8,10 @@ import { uploadAudio, analyzeAudio } from './controllers';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: process.env.CLIENT_URL,
   credentials: true
 }));
 app.use(express.json());
@@ -57,9 +56,9 @@ app.use('*', (req: Request, res: Response) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+app.listen(() => {
+  const env = process.env.NODE_ENV || 'staging';
+  console.log(`📍 Environment: ${env.charAt(0).toUpperCase() + env.slice(1)}`);
 });
 
 export default app;
