@@ -138,9 +138,9 @@ const renderProps = (obj: any, structure: (string | (string | string[])[])[], th
   // If structure is empty, this is a primitive value - render it directly
   if (structure.length === 0) {
     return (
-      <div style={{ padding: '8px 0', color: '#fff' }}>
+      <Typography sx={{ padding: '8px 0' }} color="text.primary">
         {obj !== null && obj !== undefined ? String(obj) : 'N/A'}
-      </div>
+      </Typography>
     );
   }
 
@@ -475,7 +475,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, mode, audioTr
               }}
             >
               <AccordionSummary 
-                expandIcon={isExpandable ? <ExpandMoreIcon sx={{ color: theme.palette.primary.main }} /> : null}
+                expandIcon={<ExpandMoreIcon sx={{ color: isExpandable ? theme.palette.primary.main : 'transparent' }} />}
                 sx={{ 
                   backgroundColor: theme.palette.background.default,
                   cursor: isExpandable ? 'pointer' : 'default',

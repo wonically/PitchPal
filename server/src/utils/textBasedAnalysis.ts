@@ -51,10 +51,8 @@ Criteria:
 - AudienceFit: how well tailored to target audience
 - Originality: uniqueness, differentiation from competitors
 - EmotionalImpact: emotional resonance, storytelling, connection
-- ImprovedVersion: rewrite for clarity + impact IN THE SAME LANGUAGE as the input pitch
+- ImprovedVersion: rewrite for clarity + impact
 - OverallScore: holistic assessment
-
-IMPORTANT: Detect the language of the input pitch and provide the "improvedVersion" in that same language. All other analysis should remain in English.
 
 Respond with JSON only. No extra text.`;
 
@@ -63,7 +61,7 @@ Respond with JSON only. No extra text.`;
       messages: [
         {
           role: "system",
-          content: "You are a professional pitch coach. Provide detailed, actionable feedback in the exact JSON format requested. Be thorough but concise in your analysis. Always respond with valid JSON only. IMPORTANT: The improvedVersion field must be in the same language as the input pitch, while all other fields remain in English."
+          content: "You are a professional pitch coach. Provide detailed, actionable feedback in the exact JSON format requested. Be thorough but concise in your analysis. Always respond with valid JSON only."
         },
         {
           role: "user",

@@ -40,7 +40,7 @@ const baseTheme = createTheme({
   },
 });
 
-const SHADOW = '0 0 16px 0 rgba(34,34,34,0.20)';
+const SHADOW = '0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12)';
 
 const theme = createTheme(baseTheme, {
   components: {
@@ -52,6 +52,7 @@ const theme = createTheme(baseTheme, {
           fontSize: '1rem',
         },
         outlined: {
+          borderRadius: '999px',
           border: 'none',
           color: baseTheme.palette.primary.main,
           backgroundColor: 'transparent',
@@ -68,6 +69,7 @@ const theme = createTheme(baseTheme, {
           },
         },
         contained: {
+          borderRadius: '999px',
           backgroundColor: baseTheme.palette.primary.main,
           color: baseTheme.palette.primary.contrastText,
           border: 'none',
@@ -79,6 +81,7 @@ const theme = createTheme(baseTheme, {
           },
         },
         containedError: {
+          borderRadius: '999px',
           backgroundColor: baseTheme.palette.error.main,
           color: baseTheme.palette.primary.contrastText,
           border: 'none',
@@ -98,12 +101,12 @@ const theme = createTheme(baseTheme, {
           borderRadius: '999px',
           color: baseTheme.palette.text.secondary,
           border: 'none',
-          fontWeight: 500,
-          fontSize: 16,
-          paddingLeft: 24,
-          paddingRight: 24,
-          paddingTop: 12,
-          paddingBottom: 12,
+          fontWeight: 'bold',
+          fontSize: '1rem',
+          paddingLeft: 12,
+          paddingRight: 12,
+          paddingTop: 6,
+          paddingBottom: 6,
           boxShadow: SHADOW,
           '&.Mui-selected': {
             backgroundColor: baseTheme.palette.primary.main,
@@ -140,6 +143,12 @@ const theme = createTheme(baseTheme, {
           backgroundColor: baseTheme.palette.background.paper,
           boxShadow: SHADOW,
           border: 'none',
+        },
+        rounded: {
+          boxShadow: SHADOW,
+        },
+        elevation2: {
+          boxShadow: SHADOW,
         },
       },
     },

@@ -3,8 +3,6 @@ import {
   Box,
   Typography,
   Button,
-  Card,
-  CardContent,
   ToggleButton,
   ToggleButtonGroup,
   Stack,
@@ -280,13 +278,8 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
   };
 
   return (
-    <Card sx={{ backgroundColor: (theme) => theme.palette.background.paper, color: (theme) => theme.palette.text.primary, boxShadow: 'none' }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ color: (theme) => theme.palette.primary.main, textAlign: 'center' }}>
-          Audio Pitch Input
-        </Typography>
-        
-        {/* Mode Toggle */}
+    <Box sx={{ width: '100%', background: 'transparent', color: (theme) => theme.palette.text.primary }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', py: 4 }}>
         <Box display="flex" justifyContent="center" mb={3}>
           <ToggleButtonGroup
             value={inputMode}
@@ -305,7 +298,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
             </ToggleButton>
           </ToggleButtonGroup>
         </Box>
-
         {/* Recording Mode */}
         {inputMode === 'record' && (
           <Box>
@@ -313,41 +305,23 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
               <Box display="flex" justifyContent="center">
                 <Button
                   variant="contained"
-                  size="large"
                   onClick={handleStartRecording}
                   disabled={disabled}
                   startIcon={<MicIcon />}
-                  sx={(theme) => ({
-                    backgroundColor: theme.palette.primary.main,
-                    color: theme.palette.background.paper,
-                    fontWeight: 'bold',
-                    px: 4,
-                    py: 1.5,
-                    borderRadius: Number(theme.shape.borderRadius) * 2,
-                    '&:hover': {
-                      backgroundColor: theme.palette.primary.light,
-                    },
-                    '&:disabled': {
-                      backgroundColor: theme.palette.action.disabledBackground,
-                      color: theme.palette.action.disabled,
-                    },
-                  })}
                 >
                   Start Recording
                 </Button>
               </Box>
             )}
-            
             {recordingState === 'recording' && (
               <Box textAlign="center">
                 <Button
                   variant="contained"
-                  size="large"
                   onClick={handleStopRecording}
                   disabled={disabled}
                   startIcon={<StopIcon />}
                   color="error"
-                  sx={{ mb: 2, borderRadius: 50, px: 4, py: 1.5 }}
+                  sx={{ mb: 2 }}
                 >
                   Stop Recording
                 </Button>
@@ -401,7 +375,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                 </Box>
               </Box>
             )}
-            
             {recordingState === 'recorded' && (
               <Box textAlign="center">
                 <Typography variant="body1" sx={{ color: (theme) => theme.palette.text.primary, mb: 2 }}>
@@ -417,15 +390,7 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                     }}
                     disabled={disabled}
                     startIcon={<ReplayIcon />}
-                    sx={(theme) => ({
-                      borderColor: theme.palette.primary.main,
-                      color: theme.palette.primary.main,
-                      borderRadius: theme.shape.borderRadius,
-                      '&:hover': {
-                        borderColor: theme.palette.primary.light,
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                    })}
+                    color="primary"
                   >
                     Record Again
                   </Button>
@@ -433,14 +398,7 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                     variant="contained"
                     onClick={handleFinishRecording}
                     disabled={disabled}
-                    sx={(theme) => ({
-                      backgroundColor: theme.palette.success.main,
-                      color: theme.palette.getContrastText(theme.palette.success.main),
-                      borderRadius: theme.shape.borderRadius,
-                      '&:hover': {
-                        backgroundColor: theme.palette.success.dark,
-                      },
-                    })}
+                    color="primary"
                   >
                     Use This Recording
                   </Button>
@@ -449,7 +407,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
             )}
           </Box>
         )}
-
         {/* Upload Mode */}
         {inputMode === 'upload' && (
           <Box>
@@ -502,7 +459,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                 )}
               </Paper>
             </label>
-            
             {uploadedFile && (
               <Box mt={3}>
                 <Stack direction="row" spacing={2} justifyContent="center">
@@ -516,15 +472,7 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                     }}
                     disabled={disabled}
                     startIcon={<ReplayIcon />}
-                    sx={(theme) => ({
-                      borderColor: theme.palette.primary.main,
-                      color: theme.palette.primary.main,
-                      borderRadius: theme.shape.borderRadius,
-                      '&:hover': {
-                        borderColor: theme.palette.primary.light,
-                        backgroundColor: theme.palette.action.hover,
-                      },
-                    })}
+                    color="primary"
                   >
                     Choose Different File
                   </Button>
@@ -532,14 +480,7 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
                     variant="contained"
                     onClick={handleFinishUpload}
                     disabled={disabled}
-                    sx={(theme) => ({
-                      backgroundColor: theme.palette.success.main,
-                      color: theme.palette.getContrastText(theme.palette.success.main),
-                      borderRadius: theme.shape.borderRadius,
-                      '&:hover': {
-                        backgroundColor: theme.palette.success.dark,
-                      },
-                    })}
+                    color="primary"
                   >
                     Use This File
                   </Button>
@@ -548,8 +489,6 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
             )}
           </Box>
         )}
-
-      {/* Audio Preview */}
         {/* Audio Preview */}
         {getAudioPreviewUrl() && (
           <Box mt={3} textAlign="center">
@@ -566,8 +505,8 @@ const AudioInput: React.FC<AudioInputProps> = ({ onAudioReady, disabled = false 
             </audio>
           </Box>
         )}
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 
