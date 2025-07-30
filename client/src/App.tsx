@@ -86,11 +86,9 @@ function App() {
         showToast('Analysis complete!', 'success');
       } else {
         setError('Failed to analyze pitch');
-        showToast('Failed to analyze pitch', 'error');
       }
     } catch (err: any) {
       setError('Error connecting to backend');
-      showToast('Error connecting to backend', 'error');
     } finally {
       setLoading(false);
       setPitchText('');
@@ -133,11 +131,9 @@ function App() {
         showToast('Audio analysis complete!', 'success');
       } else {
         setError('Failed to analyze audio');
-        showToast('Failed to analyze audio', 'error');
       }
     } catch (err: any) {
       setError('Error connecting to backend');
-      showToast('Error connecting to backend', 'error');
     } finally {
       setLoading(false);
     }
