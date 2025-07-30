@@ -68,7 +68,8 @@ function App() {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.post('http://localhost:3001/api/', {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL;
+      const response = await axios.post(`${backendUrl}/api/`, {
         pitchText,
         analysisType: 'general',
       });
@@ -111,7 +112,8 @@ function App() {
     try {
       const formData = new FormData();
       formData.append('audio', audioFile);
-      const response = await axios.post('http://localhost:3001/analyze', formData, {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
+      const response = await axios.post(`${backendUrl}/analyze`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       if (response.data.success) {
