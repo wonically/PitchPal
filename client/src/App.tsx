@@ -45,7 +45,6 @@ function App() {
 
 
 
-
   // Text analysis submit
   const handleSubmit = async () => {
     if (!pitchText.trim()) return;
@@ -60,7 +59,7 @@ function App() {
     setLoading(true);
     setError('');
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL;
+      const backendUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
       const response = await axios.post(`${backendUrl}/api/`, {
         pitchText,
         analysisType: 'general',
@@ -101,7 +100,7 @@ function App() {
     try {
       const formData = new FormData();
       formData.append('audio', audioFile);
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
+      const backendUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
       const response = await axios.post(`${backendUrl}/analyze`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -228,7 +227,6 @@ function App() {
                 <Alert severity="error">{error}</Alert>
               </Box>
             )}
-
           </Box>
         </Container>
       </Box>
