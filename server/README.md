@@ -20,11 +20,13 @@ Backend API for PitchPal audio pitch analysis application.
 ### Installation
 
 1. **Install Node.js dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Install Python dependencies:**
+
    ```bash
    pip3 install -r requirements.txt
    ```
@@ -36,11 +38,13 @@ Backend API for PitchPal audio pitch analysis application.
 ### Running the Server
 
 **Development mode (with auto-reload):**
+
 ```bash
 npm run dev
 ```
 
 **Production build:**
+
 ```bash
 npm run build
 npm start
@@ -55,12 +59,14 @@ The server will start on `http://localhost:3001`
 Upload and analyze an audio file.
 
 **Request:**
+
 - Content-Type: `multipart/form-data`
 - Field name: `audio`
 - Supported formats: `.wav`, `.mp3`, `.webm`
 - Max file size: 10MB
 
 **Response:**
+
 ```json
 {
   "transcript": "Thank you for listening to my pitch presentation...",
@@ -120,6 +126,7 @@ Upload and analyze an audio file.
 Health check endpoint.
 
 **Response:**
+
 ```json
 {
   "status": "OK",
@@ -178,6 +185,7 @@ The enhanced Python script (`analyze_audio.py`) provides:
 ## Dependencies
 
 ### Node.js
+
 - express: Web framework
 - multer: File upload handling
 - cors: Cross-origin requests
@@ -185,6 +193,7 @@ The enhanced Python script (`analyze_audio.py`) provides:
 - TypeScript: Type safety
 
 ### Python
+
 - **openai-whisper**: Real speech-to-text transcription
 - **opensmile**: Professional prosodic feature extraction
 - **librosa**: Audio analysis library (fallback)
@@ -201,6 +210,7 @@ The enhanced Python script (`analyze_audio.py`) provides:
 ## Error Handling
 
 The API provides detailed error responses for:
+
 - Missing or invalid audio files
 - Unsupported file formats
 - File size limit exceeded

@@ -1,21 +1,36 @@
-# 🎯 PitchPal
 
-A full-stack application built with React (TypeScript) frontend and Express (TypeScript) backend.
+# PitchPal
 
-## 🛠 Tech Stack
+PitchPal is a full-stack AI-powered pitch analysis platform. It features a modern React (TypeScript) frontend and a robust Express (TypeScript) backend, with advanced audio and text analysis powered by Python and OpenAI.
+
+---
+
+## 🛠️ Tech Stack
 
 ### Frontend (Client)
-- **React** with TypeScript
+
+- **React** (TypeScript, Create React App)
+- **Material UI (MUI)** for modern, responsive UI
 - **Axios** for API communication
-- **React Router** for navigation
-- **Create React App** for setup
+- **Session Storage** for chat persistence
 
 ### Backend (Server)
-- **Express.js** with TypeScript
+
+- **Express.js** (TypeScript)
 - **Node.js** runtime
-- **CORS** enabled for cross-origin requests
+- **CORS** for secure cross-origin requests
 - **dotenv** for environment variables
-- **OpenAI** integration ready
+- **Multer** for file uploads
+- **Python Integration** for audio analysis
+- **OpenAI** for advanced text and audio analysis
+
+### Audio Analysis (Python)
+
+- **OpenAI Whisper** for speech-to-text
+- **OpenSMILE** for prosodic features
+- **librosa, numpy, soundfile** for audio processing
+
+---
 
 ## 📁 Project Structure
 
@@ -23,110 +38,138 @@ A full-stack application built with React (TypeScript) frontend and Express (Typ
 PitchPal/
 ├── client/                 # React frontend
 │   ├── src/
+│   │   ├── components/     # UI components (AudioInput, TextInput, etc.)
+│   │   ├── utils/          # Type definitions, helpers
+│   │   └── App.tsx         # Main app logic
 │   ├── public/
 │   └── package.json
 ├── server/                 # Express backend
 │   ├── src/
-│   │   ├── controllers/
-│   │   ├── routes/
-│   │   ├── utils/
-│   │   └── server.ts
-│   ├── .env.example
-│   ├── tsconfig.json
+│   │   ├── controllers/    # Request handlers
+│   │   ├── routes/         # API routes
+│   │   ├── utils/          # Analysis helpers, OpenAI integration
+│   │   └── server.ts       # Main server entry
+│   ├── analyze_audio.py    # Python audio analysis script
+│   ├── requirements.txt    # Python dependencies
+│   ├── uploads/            # Uploaded audio files
 │   └── package.json
 ├── .gitignore
-└── package.json           # Root package.json for running both services
+└── package.json            # Root scripts for dev/build
 ```
 
-## 🚀 Quick Start
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v14 or higher)
+
+- Node.js (v16+ recommended)
+- Python 3.x
 - npm or yarn
 
 ### Installation
 
 1. **Install all dependencies:**
+
    ```bash
    npm run install-all
    ```
 
 2. **Set up environment variables:**
+   - Backend: `cd server && cp .env.example .env` (edit as needed)
+   - Frontend: `cd client && cp .env.example .env` (edit as needed)
+3. **Install Python dependencies:**
+
    ```bash
    cd server
-   cp .env.example .env
-   # Edit .env with your configuration
+   pip3 install -r requirements.txt
    ```
 
-3. **Run the development servers:**
-   ```bash
-   # From root directory - runs both client and server
-   npm run dev
-   
-   # Or run separately:
-   npm run server  # Backend on http://localhost:5000
-   npm run client  # Frontend on http://localhost:3000
-   ```
+### Running Locally
 
-## 🔧 Available Scripts
+- **Dev mode (concurrently):**
 
-### Root Level
-- `npm run dev` - Run both client and server concurrently
-- `npm run server` - Run only the backend server
-- `npm run client` - Run only the frontend client
-- `npm run build` - Build both client and server for production
-- `npm run install-all` - Install dependencies for both client and server
+  ```bash
+  npm run dev
+  ```
 
-### Server (cd server)
-- `npm run dev` - Run server in development mode with auto-reload
-- `npm run build` - Build TypeScript to JavaScript
-- `npm start` - Run production server
+- **Or run separately:**
 
-### Client (cd client)
-- `npm start` - Run development server
-- `npm run build` - Build for production
-- `npm test` - Run tests
+  ```bash
+  npm run server   # Backend (default: http://localhost:3001)
+  npm run client   # Frontend (default: http://localhost:3000)
+  ```
 
-## 🌐 API Endpoints
+---
 
-### Base URL: `http://localhost:5000`
+## � Environment Variables
 
-- `GET /` - Server status
-- `GET /health` - Health check
-- `GET /api/health` - API health check
-- `GET /api/info` - API information
-
-## 🔐 Environment Variables
-
-Create a `.env` file in the `server` directory:
+### Backend (`server/.env`)
 
 ```env
-PORT=5000
+PORT=3001
 NODE_ENV=development
-CLIENT_URL=http://localhost:3000
+REACT_APP_CLIENT_URL=http://localhost:3000
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
+### Frontend (`client/.env`)
+
+```env
+REACT_APP_SERVER_URL=http://localhost:3001
+```
+
+---
+
+## 🖥️ Frontend Features
+
+- Chat-style UI for text and audio pitch submission
+- Audio recording/upload with real-time feedback
+- Analysis results with recommendations and strengths
+- Responsive, mobile-friendly Material UI design
+- Session storage for chat history
+- Loading overlays and error alerts
+
+---
+
+## 🧠 Backend & Audio Analysis Features
+
+- REST API for text and audio pitch analysis
+- Audio file upload (up to 10MB, .wav/.mp3/.webm)
+- Python subprocess for advanced audio feature extraction
+- OpenAI Whisper for transcription, language detection, and word-level timing
+- OpenSMILE for pitch, jitter, loudness, shimmer, HNR, spectral centroid, energy, and more
+- AI-driven scoring: pitch variety, voice quality, volume consistency, pace, expressiveness
+- Detailed JSON output with transcript, features, analysis, recommendations, strengths, and metadata
+
+---
+
+## 🌐 API Endpoints (Backend)
+
+**Base URL:** `http://localhost:3001`
+
+- `POST /api/` — Analyze text pitch
+- `POST /analyze` — Upload and analyze audio file
+- `GET /health` — Health check
+- `GET /api/info` — API information
+- `GET /api/test-openai` — Check OpenAI API key status
+
+---
+
 ## 📝 Development Notes
 
-### Adding New API Routes
-1. Create controller functions in `server/src/controllers/`
-2. Add routes in `server/src/routes/`
-3. Import and use in the main router
+- **TypeScript**: Both client and server use TypeScript for type safety
+- **CORS**: Configured for secure cross-origin requests
+- **Session Storage**: Chat history is preserved in the browser
+- **Python Integration**: Audio analysis is performed by a Python script called from the backend
+- **Error Handling**: User-friendly error messages for all major failure modes
 
-### Frontend API Integration
-- Use axios for API calls
-- Server runs on port 5000, client on port 3000
-- CORS is configured for cross-origin requests
-
-### TypeScript Configuration
-- Both client and server use TypeScript
-- Server has custom tsconfig.json for Node.js
-- Client uses Create React App's TypeScript template
+---
 
 ## 🚀 Deployment
 
 ### Backend
+
 ```bash
 cd server
 npm run build
@@ -134,11 +177,29 @@ npm start
 ```
 
 ### Frontend
+
 ```bash
 cd client
 npm run build
-# Serve the build folder with your preferred static file server
+# Deploy the build/ folder to your preferred static host
 ```
+
+---
+
+## 🧩 Advanced & Future Features
+
+- User authentication and personalized history
+- Real-time streaming audio analysis
+- More detailed visualizations and analytics
+- Internationalization (i18n) support
+- Progressive Web App (PWA) features
+- Multi-language transcription
+- Custom OpenSMILE feature sets
+- Audio preprocessing and noise reduction
+- Machine learning model integration for scoring
+- Export and reporting capabilities
+
+---
 
 ## 🤝 Contributing
 
@@ -147,6 +208,8 @@ npm run build
 3. Commit changes: `git commit -am 'Add some feature'`
 4. Push to the branch: `git push origin feature-name`
 5. Submit a pull request
+
+---
 
 ## 📄 License
 
